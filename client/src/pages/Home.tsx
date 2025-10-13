@@ -2,6 +2,8 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { BookOpen, Brain, ClipboardCheck, Sparkles } from "lucide-react";
+import logoPath from "@assets/MainLogo_1760384987819.webp";
+import studyMaterialsPath from "@assets/ThingAtTheMiddle_1760384987821.webp";
 
 export default function Home() {
   const features = [
@@ -29,6 +31,14 @@ export default function Home() {
     <div className="min-h-screen">
       <section className="relative py-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
+          <div className="mb-8 flex justify-center">
+            <img 
+              src={logoPath} 
+              alt="PrimoNotes Logo" 
+              className="h-32 w-auto"
+              data-testid="img-logo"
+            />
+          </div>
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full mb-6">
             <Sparkles className="h-4 w-4" />
             <span className="text-sm font-medium">Your Complete Study Companion</span>
@@ -50,6 +60,25 @@ export default function Home() {
                 Learn More
               </Button>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 px-6 bg-primary/5">
+        <div className="max-w-5xl mx-auto text-center">
+          <h2 className="font-serif text-3xl font-semibold text-foreground mb-8">
+            Everything You Need to Excel
+          </h2>
+          <p className="text-lg text-muted-foreground mb-12 max-w-2xl mx-auto">
+            From organized notes to practice tests, all your study materials work together seamlessly.
+          </p>
+          <div className="flex justify-center">
+            <img 
+              src={studyMaterialsPath} 
+              alt="Study Materials Preview" 
+              className="max-w-md w-full h-auto"
+              data-testid="img-study-materials"
+            />
           </div>
         </div>
       </section>
