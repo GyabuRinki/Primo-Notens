@@ -9,7 +9,7 @@ interface NoteCardProps {
 }
 
 export function NoteCard({ note, onClick }: NoteCardProps) {
-  const previewText = note.content.substring(0, 150).replace(/<[^>]*>/g, '');
+  const previewText = note.content.substring(0, 150).replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
   const date = new Date(note.updatedAt).toLocaleDateString();
 
   return (

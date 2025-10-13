@@ -1,0 +1,218 @@
+import { useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import {
+  Bold,
+  Italic,
+  Underline,
+  List,
+  ListOrdered,
+  Heading1,
+  Heading2,
+  Code,
+  Palette,
+} from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+
+interface RichTextEditorProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}
+
+export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.innerHTML !== value) {
+      editorRef.current.innerHTML = value;
+    }
+  }, [value]);
+
+  const execCommand = (command: string, value?: string) => {
+    document.execCommand(command, false, value);
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  const handleInput = () => {
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  const colors = [
+    { name: "Default", value: "#000000" },
+    { name: "Brown", value: "#8B4513" },
+    { name: "Gold", value: "#DAA520" },
+    { name: "Red", value: "#DC2626" },
+    { name: "Blue", value: "#2563EB" },
+    { name: "Green", value: "#16A34A" },
+    { name: "Purple", value: "#9333EA" },
+    { name: "Orange", value: "#EA580C" },
+  ];
+
+  const highlightColors = [
+    { name: "None", value: "transparent" },
+    { name: "Yellow", value: "#FEF08A" },
+    { name: "Green", value: "#BBF7D0" },
+    { name: "Blue", value: "#BFDBFE" },
+    { name: "Pink", value: "#FBCFE8" },
+    { name: "Orange", value: "#FED7AA" },
+  ];
+
+  return (
+    <div className="border rounded-md overflow-hidden">
+      <div className="flex items-center gap-1 p-2 border-b bg-muted/30 flex-wrap">
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => execCommand("bold")}
+          data-testid="button-format-bold"
+          className="h-8 w-8"
+        >
+          <Bold className="h-4 w-4" />
+        </Button>
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => execCommand("italic")}
+          data-testid="button-format-italic"
+          className="h-8 w-8"
+        >
+          <Italic className="h-4 w-4" />
+        </Button>
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => execCommand("underline")}
+          data-testid="button-format-underline"
+          className="h-8 w-8"
+        >
+          <Underline className="h-4 w-4" />
+        </Button>
+
+        <Separator orientation="vertical" className="h-6 mx-1" />
+
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => execCommand("formatBlock", "<h1>")}
+          data-testid="button-format-h1"
+          className="h-8 w-8"
+        >
+          <Heading1 className="h-4 w-4" />
+        </Button>
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => execCommand("formatBlock", "<h2>")}
+          data-testid="button-format-h2"
+          className="h-8 w-8"
+        >
+          <Heading2 className="h-4 w-4" />
+        </Button>
+
+        <Separator orientation="vertical" className="h-6 mx-1" />
+
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => execCommand("insertUnorderedList")}
+          data-testid="button-format-ul"
+          className="h-8 w-8"
+        >
+          <List className="h-4 w-4" />
+        </Button>
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => execCommand("insertOrderedList")}
+          data-testid="button-format-ol"
+          className="h-8 w-8"
+        >
+          <ListOrdered className="h-4 w-4" />
+        </Button>
+
+        <Separator orientation="vertical" className="h-6 mx-1" />
+
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => execCommand("formatBlock", "<pre>")}
+          data-testid="button-format-code"
+          className="h-8 w-8"
+        >
+          <Code className="h-4 w-4" />
+        </Button>
+
+        <Separator orientation="vertical" className="h-6 mx-1" />
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              data-testid="button-text-color"
+              className="h-8 w-8"
+            >
+              <Palette className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-3">
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs font-medium mb-2">Text Color</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {colors.map((color) => (
+                    <button
+                      key={color.value}
+                      onClick={() => execCommand("foreColor", color.value)}
+                      className="h-8 w-8 rounded-md border hover-elevate active-elevate-2"
+                      style={{ backgroundColor: color.value }}
+                      title={color.name}
+                      data-testid={`button-color-${color.name.toLowerCase()}`}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-medium mb-2">Highlight</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {highlightColors.map((color) => (
+                    <button
+                      key={color.value}
+                      onClick={() => execCommand("hiliteColor", color.value)}
+                      className="h-8 w-8 rounded-md border hover-elevate active-elevate-2"
+                      style={{ backgroundColor: color.value }}
+                      title={color.name}
+                      data-testid={`button-highlight-${color.name.toLowerCase()}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      <div
+        ref={editorRef}
+        contentEditable
+        onInput={handleInput}
+        data-placeholder={placeholder}
+        className="min-h-[400px] p-4 focus:outline-none prose prose-sm max-w-none"
+        data-testid="editor-content"
+        style={{
+          wordWrap: "break-word",
+          overflowWrap: "break-word",
+        }}
+      />
+    </div>
+  );
+}

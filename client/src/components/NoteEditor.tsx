@@ -2,10 +2,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Save, Trash2, X, Plus } from "lucide-react";
+import { RichTextEditor } from "./RichTextEditor";
 import type { Note } from "@shared/schema";
 
 interface NoteEditorProps {
@@ -47,7 +47,7 @@ export function NoteEditor({ note, onSave, onCancel, onDelete }: NoteEditorProps
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
         <Button variant="ghost" onClick={onCancel} data-testid="button-back">
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -128,14 +128,13 @@ export function NoteEditor({ note, onSave, onCancel, onDelete }: NoteEditorProps
 
           <div>
             <Label htmlFor="content">Content</Label>
-            <Textarea
-              id="content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Start writing your notes..."
-              className="mt-2 min-h-[400px] font-mono text-sm"
-              data-testid="textarea-note-content"
-            />
+            <div className="mt-2">
+              <RichTextEditor
+                value={content}
+                onChange={setContent}
+                placeholder="Start writing your notes with rich formatting..."
+              />
+            </div>
           </div>
         </div>
       </Card>
