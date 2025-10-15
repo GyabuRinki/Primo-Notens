@@ -11,7 +11,7 @@ export function exportDeckToText(deck: Deck, cards: Flashcard[], options: Export
     output += `DESCRIPTION: ${deck.description}\n`;
   }
   output += `CREATED: ${new Date(deck.createdAt).toISOString()}\n`;
-  output += `===\n\n`;
+  output += `(d)-\n\n`;
 
   cards.forEach((card, index) => {
     output += `CARD ${index + 1}\n`;
@@ -30,7 +30,7 @@ export function exportDeckToText(deck: Deck, cards: Flashcard[], options: Export
       output += `\n`;
     }
     
-    output += `---\n\n`;
+    output += `(c)-\n\n`;
   });
 
   return output;
@@ -39,7 +39,7 @@ export function exportDeckToText(deck: Deck, cards: Flashcard[], options: Export
 export function exportCardsToText(cards: Flashcard[], options: ExportOptions = { includeProgress: false }): string {
   let output = `FLASHCARDS EXPORT\n`;
   output += `EXPORTED: ${new Date().toISOString()}\n`;
-  output += `===\n\n`;
+  output += `(d)-\n\n`;
 
   cards.forEach((card, index) => {
     output += `CARD ${index + 1}\n`;
@@ -58,7 +58,7 @@ export function exportCardsToText(cards: Flashcard[], options: ExportOptions = {
       output += `\n`;
     }
     
-    output += `---\n\n`;
+    output += `(c)-\n\n`;
   });
 
   return output;
@@ -82,7 +82,7 @@ export function importDeckFromText(text: string): ParsedDeck {
   const cards: Omit<Flashcard, 'id' | 'deckId' | 'createdAt' | 'updatedAt'>[] = [];
 
   // Parse deck info
-  while (currentLine < lines.length && lines[currentLine].trim() !== '===') {
+  while (currentLine < lines.length && lines[currentLine].trim() !== '(d)-') {
     const line = lines[currentLine].trim();
     
     if (line.startsWith('DECK: ')) {
@@ -96,7 +96,7 @@ export function importDeckFromText(text: string): ParsedDeck {
     currentLine++;
   }
 
-  // Skip the === separator and empty lines
+  // Skip the (d)- separator and empty lines
   currentLine++;
   while (currentLine < lines.length && lines[currentLine].trim() === '') {
     currentLine++;
@@ -120,7 +120,7 @@ export function importDeckFromText(text: string): ParsedDeck {
       currentLine++;
       
       // Parse card fields
-      while (currentLine < lines.length && lines[currentLine].trim() !== '---') {
+      while (currentLine < lines.length && lines[currentLine].trim() !== '(c)-') {
         const cardLine = lines[currentLine].trim();
         
         if (cardLine.startsWith('FRONT: ')) {
@@ -156,7 +156,7 @@ export function importDeckFromText(text: string): ParsedDeck {
         cards.push(card);
       }
       
-      // Skip the --- separator
+      // Skip the (c)- separator
       currentLine++;
       
       // Skip empty lines
@@ -176,11 +176,11 @@ export function importCardsFromText(text: string): Omit<Flashcard, 'id' | 'deckI
   let currentLine = 0;
 
   // Skip header
-  while (currentLine < lines.length && lines[currentLine].trim() !== '===') {
+  while (currentLine < lines.length && lines[currentLine].trim() !== '(d)-') {
     currentLine++;
   }
 
-  // Skip the === separator and empty lines
+  // Skip the (d)- separator and empty lines
   currentLine++;
   while (currentLine < lines.length && lines[currentLine].trim() === '') {
     currentLine++;
@@ -206,7 +206,7 @@ export function importCardsFromText(text: string): Omit<Flashcard, 'id' | 'deckI
       currentLine++;
       
       // Parse card fields
-      while (currentLine < lines.length && lines[currentLine].trim() !== '---') {
+      while (currentLine < lines.length && lines[currentLine].trim() !== '(c)-') {
         const cardLine = lines[currentLine].trim();
         
         if (cardLine.startsWith('FRONT: ')) {
@@ -242,7 +242,7 @@ export function importCardsFromText(text: string): Omit<Flashcard, 'id' | 'deckI
         cards.push(card);
       }
       
-      // Skip the --- separator
+      // Skip the (c)- separator
       currentLine++;
       
       // Skip empty lines
@@ -258,7 +258,6 @@ export function importCardsFromText(text: string): Omit<Flashcard, 'id' | 'deckI
 }
 
 export function downloadTextFile(content: string, filename: string) {
-  console.log('Downloading file:', filename, 'Content length:', content.length);
   const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');

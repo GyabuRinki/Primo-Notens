@@ -129,20 +129,15 @@ export default function Flashcards() {
   };
 
   const handleExportDeck = () => {
-    if (!selectedDeck) {
-      console.error('No deck selected');
-      return;
-    }
+    if (!selectedDeck) return;
     
-    console.log('Exporting deck:', selectedDeck.name);
     const deckCards = flashcards.filter(c => c.deckId === selectedDeck.id);
-    console.log('Found', deckCards.length, 'cards in deck');
     const textContent = exportDeckToText(selectedDeck, deckCards, { includeProgress });
-    console.log('Generated text content, length:', textContent.length);
     const filename = `${selectedDeck.name.replace(/[^a-z0-9]/gi, '_')}.txt`;
     downloadTextFile(textContent, filename);
     
     setExportDialogOpen(false);
+    setIncludeProgress(false);
     toast({
       title: "Deck exported",
       description: `${selectedDeck.name} has been exported successfully.`,
@@ -199,6 +194,7 @@ export default function Flashcards() {
     downloadTextFile(textContent, filename);
     
     setExportCardsDialogOpen(false);
+    setIncludeProgress(false);
     toast({
       title: "Cards exported",
       description: `${deckCards.length} cards have been exported successfully.`,
