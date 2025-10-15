@@ -1,8 +1,9 @@
-import type { Note, Flashcard, Test, TestResult } from "@shared/schema";
+import type { Note, Flashcard, Test, TestResult, Deck } from "@shared/schema";
 
 const STORAGE_KEYS = {
   NOTES: 'primonotes_notes',
   FLASHCARDS: 'primonotes_flashcards',
+  DECKS: 'primonotes_decks',
   TESTS: 'primonotes_tests',
   TEST_RESULTS: 'primonotes_test_results',
 } as const;
@@ -24,6 +25,15 @@ export const localStorageService = {
   
   saveFlashcards: (flashcards: Flashcard[]) => {
     localStorage.setItem(STORAGE_KEYS.FLASHCARDS, JSON.stringify(flashcards));
+  },
+
+  getDecks: (): Deck[] => {
+    const data = localStorage.getItem(STORAGE_KEYS.DECKS);
+    return data ? JSON.parse(data) : [];
+  },
+
+  saveDecks: (decks: Deck[]) => {
+    localStorage.setItem(STORAGE_KEYS.DECKS, JSON.stringify(decks));
   },
   
   getTests: (): Test[] => {

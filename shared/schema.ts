@@ -15,13 +15,30 @@ export const insertNoteSchema = noteSchema.omit({ id: true, createdAt: true, upd
 export type Note = z.infer<typeof noteSchema>;
 export type InsertNote = z.infer<typeof insertNoteSchema>;
 
+export const deckSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+  subject: z.string(),
+  color: z.string().optional(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+});
+
+export const insertDeckSchema = deckSchema.omit({ id: true, createdAt: true, updatedAt: true });
+
+export type Deck = z.infer<typeof deckSchema>;
+export type InsertDeck = z.infer<typeof insertDeckSchema>;
+
 export const flashcardSchema = z.object({
   id: z.string(),
+  deckId: z.string(),
   front: z.string(),
   back: z.string(),
   subject: z.string(),
   tags: z.array(z.string()),
-  difficulty: z.enum(['easy', 'good', 'hard', 'again']).optional(),
+  interval: z.number().default(0),
+  easeFactor: z.number().default(2.5),
   nextReview: z.number().optional(),
   reviewCount: z.number().default(0),
   createdAt: z.number(),

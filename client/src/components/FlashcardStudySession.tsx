@@ -23,16 +23,33 @@ export function FlashcardStudySession({ flashcards, onComplete, onExit }: Flashc
     const card = updated[currentIndex];
     
     card.reviewCount = (card.reviewCount || 0) + 1;
-    card.difficulty = difficulty;
     
-    const intervals = {
-      easy: 7 * 24 * 60 * 60 * 1000,
-      good: 3 * 24 * 60 * 60 * 1000,
-      hard: 1 * 24 * 60 * 60 * 1000,
-      again: 10 * 60 * 1000,
-    };
+    let newInterval = card.interval || 0;
+    let newEaseFactor = card.easeFactor || 2.5;
     
-    card.nextReview = Date.now() + intervals[difficulty];
+    if (difficulty === 'again') {
+      newInterval = 0;
+      newEaseFactor = Math.max(1.3, newEaseFactor - 0.2);
+      card.nextReview = Date.now() + 10 * 60 * 1000;
+    } else {
+      if (newInterval === 0) {
+        newInterval = 1;
+      } else if (newInterval === 1) {
+        newInterval = 6;
+      } else {
+        newInterval = Math.round(newInterval * newEaseFactor);
+      }
+      
+      const qualityMap = { hard: 3, good: 4, easy: 5 };
+      const quality = qualityMap[difficulty];
+      newEaseFactor = newEaseFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+      newEaseFactor = Math.max(1.3, newEaseFactor);
+      
+      card.nextReview = Date.now() + newInterval * 24 * 60 * 60 * 1000;
+    }
+    
+    card.interval = newInterval;
+    card.easeFactor = newEaseFactor;
     
     setUpdatedCards(updated);
 
