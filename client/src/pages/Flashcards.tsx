@@ -36,6 +36,10 @@ export default function Flashcards() {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportCardsDialogOpen, setExportCardsDialogOpen] = useState(false);
   const [includeProgress, setIncludeProgress] = useState(false);
+  const [studyAhead, setStudyAhead] = useState(() => {
+    const saved = localStorage.getItem('studyAhead');
+    return saved ? JSON.parse(saved) : false;
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -251,9 +255,29 @@ export default function Flashcards() {
         return a.nextReview - b.nextReview;
       });
     
+    let finalCards = cardsToStudy;
+    
+    if (cardsToStudy.length === 0 && studyAhead) {
+      finalCards = deckCards.sort((a, b) => {
+        if (!a.nextReview && !b.nextReview) return 0;
+        if (!a.nextReview) return -1;
+        if (!b.nextReview) return 1;
+        return a.nextReview - b.nextReview;
+      });
+    }
+    
+    if (finalCards.length === 0) {
+      setIsStudying(false);
+      toast({
+        title: "No cards to study",
+        description: "Enable 'Study cards not yet due' to study ahead.",
+      });
+      return null;
+    }
+    
     return (
       <FlashcardStudySession
-        flashcards={cardsToStudy.length > 0 ? cardsToStudy : deckCards}
+        flashcards={finalCards}
         onComplete={handleUpdateAfterStudy}
         onExit={() => setIsStudying(false)}
       />
@@ -354,9 +378,25 @@ export default function Flashcards() {
                 <span className="text-sm font-medium">{progress.reviewed} / {progress.total} reviewed</span>
               </div>
               <Progress value={progress.percentage} className="h-2" />
-              <div className="flex items-center gap-4 text-sm flex-wrap">
-                <Badge variant="outline">{progress.total} total cards</Badge>
-                <Badge variant="outline">{progress.dueToday} due today</Badge>
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-4 text-sm flex-wrap">
+                  <Badge variant="outline">{progress.total} total cards</Badge>
+                  <Badge variant="outline">{progress.dueToday} due today</Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="study-ahead"
+                    checked={studyAhead}
+                    onCheckedChange={(checked) => {
+                      setStudyAhead(checked);
+                      localStorage.setItem('studyAhead', JSON.stringify(checked));
+                    }}
+                    data-testid="switch-study-ahead"
+                  />
+                  <Label htmlFor="study-ahead" className="text-sm text-muted-foreground cursor-pointer">
+                    Study cards not yet due
+                  </Label>
+                </div>
               </div>
             </div>
           </Card>
