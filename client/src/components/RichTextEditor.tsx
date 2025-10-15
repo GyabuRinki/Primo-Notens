@@ -1,6 +1,8 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Bold,
   Italic,
@@ -26,6 +28,8 @@ interface RichTextEditorProps {
 
 export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
+  const [customTextColor, setCustomTextColor] = useState("#000000");
+  const [customHighlightColor, setCustomHighlightColor] = useState("#FEF08A");
 
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== value) {
@@ -47,7 +51,6 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
   };
 
   const colors = [
-    { name: "Default", value: "#000000" },
     { name: "Brown", value: "#8B4513" },
     { name: "Gold", value: "#DAA520" },
     { name: "Red", value: "#DC2626" },
@@ -55,6 +58,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
     { name: "Green", value: "#16A34A" },
     { name: "Purple", value: "#9333EA" },
     { name: "Orange", value: "#EA580C" },
+    { name: "White", value: "#FFFFFF" },
   ];
 
   const highlightColors = [
@@ -168,7 +172,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
             <div className="space-y-3">
               <div>
                 <p className="text-xs font-medium mb-2">Text Color</p>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 gap-2 mb-3">
                   {colors.map((color) => (
                     <button
                       key={color.value}
@@ -180,10 +184,30 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
                     />
                   ))}
                 </div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="custom-text-color" className="text-xs whitespace-nowrap">Custom:</Label>
+                  <Input
+                    id="custom-text-color"
+                    type="color"
+                    value={customTextColor}
+                    onChange={(e) => setCustomTextColor(e.target.value)}
+                    className="h-8 w-16 p-1 cursor-pointer"
+                    data-testid="input-custom-text-color"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => execCommand("foreColor", customTextColor)}
+                    data-testid="button-apply-custom-text-color"
+                  >
+                    Apply
+                  </Button>
+                </div>
               </div>
+              <Separator />
               <div>
                 <p className="text-xs font-medium mb-2">Highlight</p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-2 mb-3">
                   {highlightColors.map((color) => (
                     <button
                       key={color.value}
@@ -194,6 +218,25 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
                       data-testid={`button-highlight-${color.name.toLowerCase()}`}
                     />
                   ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="custom-highlight-color" className="text-xs whitespace-nowrap">Custom:</Label>
+                  <Input
+                    id="custom-highlight-color"
+                    type="color"
+                    value={customHighlightColor}
+                    onChange={(e) => setCustomHighlightColor(e.target.value)}
+                    className="h-8 w-16 p-1 cursor-pointer"
+                    data-testid="input-custom-highlight-color"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => execCommand("hiliteColor", customHighlightColor)}
+                    data-testid="button-apply-custom-highlight-color"
+                  >
+                    Apply
+                  </Button>
                 </div>
               </div>
             </div>
@@ -206,7 +249,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
         contentEditable
         onInput={handleInput}
         data-placeholder={placeholder}
-        className="min-h-[400px] p-4 focus:outline-none prose prose-sm max-w-none"
+        className="min-h-[400px] p-4 focus:outline-none prose prose-sm max-w-none text-foreground"
         data-testid="editor-content"
         style={{
           wordWrap: "break-word",
