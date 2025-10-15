@@ -1,4 +1,4 @@
-import { Deck, Flashcard } from "@shared/schema";
+import { Deck, Flashcard, Note, Test, Question } from "@shared/schema";
 
 export interface ExportOptions {
   includeProgress: boolean;
@@ -297,4 +297,250 @@ export function uploadTextFile(): Promise<string> {
     
     input.click();
   });
+}
+
+export function exportNotesToText(notes: Note[]): string {
+  let output = `NOTES EXPORT\n`;
+  output += `EXPORTED: ${new Date().toISOString()}\n`;
+  output += `TOTAL: ${notes.length} notes\n`;
+  output += `(d)-\n\n`;
+
+  notes.forEach((note, index) => {
+    output += `NOTE ${index + 1}\n`;
+    output += `TITLE: ${note.title}\n`;
+    output += `SUBJECT: ${note.subject}\n`;
+    if (note.tags.length > 0) {
+      output += `TAGS: ${note.tags.join(', ')}\n`;
+    }
+    output += `CONTENT-START\n`;
+    output += `${note.content}\n`;
+    output += `CONTENT-END\n`;
+    output += `CREATED: ${new Date(note.createdAt).toISOString()}\n`;
+    output += `UPDATED: ${new Date(note.updatedAt).toISOString()}\n`;
+    output += `(n)-\n\n`;
+  });
+
+  return output;
+}
+
+export function importNotesFromText(text: string): Omit<Note, 'id' | 'createdAt' | 'updatedAt'>[] {
+  const lines = text.split('\n');
+  let currentLine = 0;
+
+  while (currentLine < lines.length && lines[currentLine].trim() !== '(d)-') {
+    currentLine++;
+  }
+
+  currentLine++;
+  while (currentLine < lines.length && lines[currentLine].trim() === '') {
+    currentLine++;
+  }
+
+  const notes: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>[] = [];
+
+  while (currentLine < lines.length) {
+    const line = lines[currentLine].trim();
+    
+    if (line.startsWith('NOTE ')) {
+      const note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'> = {
+        title: '',
+        content: '',
+        subject: '',
+        tags: [],
+      };
+
+      currentLine++;
+      
+      while (currentLine < lines.length && lines[currentLine].trim() !== '(n)-') {
+        const noteLine = lines[currentLine].trim();
+        
+        if (noteLine.startsWith('TITLE: ')) {
+          note.title = noteLine.substring(7);
+        } else if (noteLine.startsWith('SUBJECT: ')) {
+          note.subject = noteLine.substring(9);
+        } else if (noteLine.startsWith('TAGS: ')) {
+          note.tags = noteLine.substring(6).split(',').map(t => t.trim()).filter(t => t);
+        } else if (noteLine === 'CONTENT-START') {
+          currentLine++;
+          let content = '';
+          while (currentLine < lines.length && lines[currentLine].trim() !== 'CONTENT-END') {
+            content += lines[currentLine] + '\n';
+            currentLine++;
+          }
+          note.content = content.trim();
+        }
+        
+        currentLine++;
+      }
+
+      if (note.title && note.subject) {
+        notes.push(note);
+      }
+      
+      currentLine++;
+      
+      while (currentLine < lines.length && lines[currentLine].trim() === '') {
+        currentLine++;
+      }
+    } else {
+      currentLine++;
+    }
+  }
+
+  return notes;
+}
+
+export function exportTestsToText(tests: Test[]): string {
+  let output = `TESTS EXPORT\n`;
+  output += `EXPORTED: ${new Date().toISOString()}\n`;
+  output += `TOTAL: ${tests.length} tests\n`;
+  output += `(d)-\n\n`;
+
+  tests.forEach((test, index) => {
+    output += `TEST ${index + 1}\n`;
+    output += `TITLE: ${test.title}\n`;
+    if (test.description) {
+      output += `DESCRIPTION: ${test.description}\n`;
+    }
+    output += `SUBJECT: ${test.subject}\n`;
+    if (test.timeLimit) {
+      output += `TIME_LIMIT: ${test.timeLimit}\n`;
+    }
+    output += `QUESTIONS: ${test.questions.length}\n`;
+    output += `CREATED: ${new Date(test.createdAt).toISOString()}\n`;
+    output += `(t)-\n\n`;
+
+    test.questions.forEach((question, qIndex) => {
+      output += `QUESTION ${qIndex + 1}\n`;
+      output += `TYPE: ${question.type}\n`;
+      output += `TEXT: ${question.question}\n`;
+      output += `SUBJECT: ${question.subject}\n`;
+      if (question.tags.length > 0) {
+        output += `TAGS: ${question.tags.join(', ')}\n`;
+      }
+      if (question.options && question.options.length > 0) {
+        output += `OPTIONS: ${question.options.join(' | ')}\n`;
+      }
+      output += `CORRECT_ANSWER: ${question.correctAnswer}\n`;
+      if (question.explanation) {
+        output += `EXPLANATION: ${question.explanation}\n`;
+      }
+      output += `(q)-\n\n`;
+    });
+  });
+
+  return output;
+}
+
+export function importTestsFromText(text: string): Omit<Test, 'id' | 'createdAt' | 'updatedAt'>[] {
+  const lines = text.split('\n');
+  let currentLine = 0;
+
+  while (currentLine < lines.length && lines[currentLine].trim() !== '(d)-') {
+    currentLine++;
+  }
+
+  currentLine++;
+  while (currentLine < lines.length && lines[currentLine].trim() === '') {
+    currentLine++;
+  }
+
+  const tests: Omit<Test, 'id' | 'createdAt' | 'updatedAt'>[] = [];
+
+  while (currentLine < lines.length) {
+    const line = lines[currentLine].trim();
+    
+    if (line.startsWith('TEST ')) {
+      const test: Omit<Test, 'id' | 'createdAt' | 'updatedAt'> = {
+        title: '',
+        description: '',
+        subject: '',
+        questions: [],
+        timeLimit: undefined,
+      };
+
+      currentLine++;
+      
+      while (currentLine < lines.length && lines[currentLine].trim() !== '(t)-') {
+        const testLine = lines[currentLine].trim();
+        
+        if (testLine.startsWith('TITLE: ')) {
+          test.title = testLine.substring(7);
+        } else if (testLine.startsWith('DESCRIPTION: ')) {
+          test.description = testLine.substring(13);
+        } else if (testLine.startsWith('SUBJECT: ')) {
+          test.subject = testLine.substring(9);
+        } else if (testLine.startsWith('TIME_LIMIT: ')) {
+          test.timeLimit = parseInt(testLine.substring(12));
+        }
+        
+        currentLine++;
+      }
+
+      currentLine++;
+      while (currentLine < lines.length && lines[currentLine].trim() === '') {
+        currentLine++;
+      }
+
+      while (currentLine < lines.length) {
+        const questionLine = lines[currentLine].trim();
+        
+        if (questionLine.startsWith('QUESTION ')) {
+          const question: Question = {
+            id: crypto.randomUUID(),
+            type: 'multiple-choice',
+            question: '',
+            subject: '',
+            tags: [],
+            correctAnswer: '',
+          };
+
+          currentLine++;
+          
+          while (currentLine < lines.length && lines[currentLine].trim() !== '(q)-') {
+            const qLine = lines[currentLine].trim();
+            
+            if (qLine.startsWith('TYPE: ')) {
+              question.type = qLine.substring(6) as 'multiple-choice' | 'true-false' | 'short-answer';
+            } else if (qLine.startsWith('TEXT: ')) {
+              question.question = qLine.substring(6);
+            } else if (qLine.startsWith('SUBJECT: ')) {
+              question.subject = qLine.substring(9);
+            } else if (qLine.startsWith('TAGS: ')) {
+              question.tags = qLine.substring(6).split(',').map(t => t.trim()).filter(t => t);
+            } else if (qLine.startsWith('OPTIONS: ')) {
+              question.options = qLine.substring(9).split('|').map(o => o.trim()).filter(o => o);
+            } else if (qLine.startsWith('CORRECT_ANSWER: ')) {
+              question.correctAnswer = qLine.substring(16);
+            } else if (qLine.startsWith('EXPLANATION: ')) {
+              question.explanation = qLine.substring(13);
+            }
+            
+            currentLine++;
+          }
+
+          if (question.question && question.correctAnswer) {
+            test.questions.push(question);
+          }
+          
+          currentLine++;
+          while (currentLine < lines.length && lines[currentLine].trim() === '') {
+            currentLine++;
+          }
+        } else if (questionLine.startsWith('TEST ') || currentLine >= lines.length) {
+          break;
+        } else {
+          currentLine++;
+        }
+      }
+
+      if (test.title && test.subject && test.questions.length > 0) {
+        tests.push(test);
+      }
+    } else {
+      currentLine++;
+    }
+  }
+
+  return tests;
 }
