@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Play } from "lucide-react";
+import { Plus, Search, Play, Download, Upload } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { localStorageService } from "@/lib/localStorage";
 import type { Test } from "@shared/schema";
 import { TestBuilder } from "@/components/TestBuilder";
 import { TestTaker } from "@/components/TestTaker";
+import { exportTestsToText, importTestsFromText, downloadTextFile, uploadTextFile } from "@/lib/importExport";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Tests() {
   const [tests, setTests] = useState<Test[]>([]);
@@ -15,6 +17,7 @@ export default function Tests() {
   const [selectedTest, setSelectedTest] = useState<Test | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isTaking, setIsTaking] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const loadedTests = localStorageService.getTests();
@@ -56,6 +59,65 @@ export default function Tests() {
     setIsTaking(true);
   };
 
+  const handleExportTests = () => {
+    if (tests.length === 0) {
+      toast({
+        title: "No tests to export",
+        description: "Create some tests first before exporting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const exportText = exportTestsToText(tests);
+    const timestamp = new Date().toISOString().split('T')[0];
+    downloadTextFile(exportText, `tests_${timestamp}.txt`);
+    
+    toast({
+      title: "Tests exported",
+      description: `${tests.length} tests have been exported successfully.`,
+    });
+  };
+
+  const handleImportTests = async () => {
+    try {
+      const text = await uploadTextFile();
+      const importedTests = importTestsFromText(text);
+      
+      if (importedTests.length === 0) {
+        toast({
+          title: "Import failed",
+          description: "No valid tests found in the file.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const newTests = importedTests.map(test => ({
+        ...test,
+        id: crypto.randomUUID(),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      }));
+      
+      const updatedTests = [...newTests, ...tests];
+      
+      setTests(updatedTests);
+      localStorageService.saveTests(updatedTests);
+      
+      toast({
+        title: "Tests imported",
+        description: `${newTests.length} tests have been imported successfully.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Import failed",
+        description: error instanceof Error ? error.message : "Failed to import tests",
+        variant: "destructive",
+      });
+    }
+  };
+
   const filteredTests = tests.filter(test =>
     test.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     test.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -95,10 +157,20 @@ export default function Tests() {
           <h1 className="font-serif text-3xl font-semibold text-foreground">Mock Tests</h1>
           <p className="text-muted-foreground">Create and take practice exams</p>
         </div>
-        <Button onClick={createNewTest} data-testid="button-create-test">
-          <Plus className="h-4 w-4 mr-2" />
-          New Test
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button onClick={handleExportTests} variant="outline" data-testid="button-export-tests">
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+          <Button onClick={handleImportTests} variant="outline" data-testid="button-import-tests">
+            <Upload className="h-4 w-4 mr-2" />
+            Import
+          </Button>
+          <Button onClick={createNewTest} data-testid="button-create-test">
+            <Plus className="h-4 w-4 mr-2" />
+            New Test
+          </Button>
+        </div>
       </div>
 
       <div className="relative mb-6">
