@@ -39,26 +39,51 @@ export function FlashcardView({ flashcard, onRate }: FlashcardViewProps) {
         </Button>
       </div>
 
-      <Card
-        className="min-h-[300px] p-8 cursor-pointer hover-elevate active-elevate-2 transition-all duration-500"
+      <div
+        className="relative min-h-[300px] cursor-pointer"
         onClick={() => setIsFlipped(!isFlipped)}
         data-testid="card-flashcard"
         style={{
           transformStyle: 'preserve-3d',
+          transition: 'transform 0.6s',
           transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
         }}
       >
-        <div className="flex items-center justify-center h-full min-h-[250px]">
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground mb-4">
-              {isFlipped ? 'ANSWER' : 'QUESTION'}
-            </p>
-            <p className="text-lg text-foreground whitespace-pre-wrap">
-              {isFlipped ? flashcard.back : flashcard.front}
-            </p>
+        <Card
+          className="absolute inset-0 p-8 hover-elevate active-elevate-2 transition-all"
+          style={{
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
+          }}
+        >
+          <div className="flex items-center justify-center h-full min-h-[250px]">
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground mb-4">QUESTION</p>
+              <p className="text-lg text-foreground whitespace-pre-wrap">
+                {flashcard.front}
+              </p>
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+
+        <Card
+          className="absolute inset-0 p-8 hover-elevate active-elevate-2 transition-all"
+          style={{
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
+            transform: 'rotateY(180deg)',
+          }}
+        >
+          <div className="flex items-center justify-center h-full min-h-[250px]">
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground mb-4">ANSWER</p>
+              <p className="text-lg text-foreground whitespace-pre-wrap">
+                {flashcard.back}
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
 
       {isFlipped && (
         <div className="mt-6 grid grid-cols-4 gap-3">
