@@ -129,10 +129,16 @@ export default function Flashcards() {
   };
 
   const handleExportDeck = () => {
-    if (!selectedDeck) return;
+    if (!selectedDeck) {
+      console.error('No deck selected');
+      return;
+    }
     
+    console.log('Exporting deck:', selectedDeck.name);
     const deckCards = flashcards.filter(c => c.deckId === selectedDeck.id);
+    console.log('Found', deckCards.length, 'cards in deck');
     const textContent = exportDeckToText(selectedDeck, deckCards, { includeProgress });
+    console.log('Generated text content, length:', textContent.length);
     const filename = `${selectedDeck.name.replace(/[^a-z0-9]/gi, '_')}.txt`;
     downloadTextFile(textContent, filename);
     
@@ -396,6 +402,72 @@ export default function Flashcards() {
             ))}
           </div>
         )}
+
+        <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+          <DialogContent data-testid="dialog-export-deck">
+            <DialogHeader>
+              <DialogTitle>Export Deck</DialogTitle>
+              <DialogDescription>
+                Export this deck and all its cards to a .txt file that can be shared with others.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex items-center justify-between py-4">
+              <div className="space-y-1">
+                <Label htmlFor="include-progress-deck" className="text-sm font-medium">
+                  Include Progress Data
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Include review history and spaced repetition data
+                </p>
+              </div>
+              <Switch
+                id="include-progress-deck"
+                checked={includeProgress}
+                onCheckedChange={setIncludeProgress}
+                data-testid="switch-include-progress"
+              />
+            </div>
+            <DialogFooter>
+              <Button onClick={handleExportDeck} data-testid="button-confirm-export-deck">
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={exportCardsDialogOpen} onOpenChange={setExportCardsDialogOpen}>
+          <DialogContent data-testid="dialog-export-cards">
+            <DialogHeader>
+              <DialogTitle>Export Cards</DialogTitle>
+              <DialogDescription>
+                Export only the cards from this deck to a .txt file.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex items-center justify-between py-4">
+              <div className="space-y-1">
+                <Label htmlFor="include-progress-cards-deck" className="text-sm font-medium">
+                  Include Progress Data
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Include review history and spaced repetition data
+                </p>
+              </div>
+              <Switch
+                id="include-progress-cards-deck"
+                checked={includeProgress}
+                onCheckedChange={setIncludeProgress}
+                data-testid="switch-include-progress-cards"
+              />
+            </div>
+            <DialogFooter>
+              <Button onClick={handleExportCards} data-testid="button-confirm-export-cards">
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }

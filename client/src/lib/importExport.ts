@@ -258,15 +258,20 @@ export function importCardsFromText(text: string): Omit<Flashcard, 'id' | 'deckI
 }
 
 export function downloadTextFile(content: string, filename: string) {
-  const blob = new Blob([content], { type: 'text/plain' });
+  console.log('Downloading file:', filename, 'Content length:', content.length);
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
+  link.style.display = 'none';
   document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  
+  setTimeout(() => {
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, 100);
 }
 
 export function uploadTextFile(): Promise<string> {
