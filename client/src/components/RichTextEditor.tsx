@@ -106,7 +106,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
         <Button
           size="icon"
           variant="ghost"
-          onClick={() => execCommand("formatBlock", "<h1>")}
+          onClick={() => execCommand("formatBlock", "h1")}
           data-testid="button-format-h1"
           className="h-8 w-8"
         >
@@ -115,7 +115,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
         <Button
           size="icon"
           variant="ghost"
-          onClick={() => execCommand("formatBlock", "<h2>")}
+          onClick={() => execCommand("formatBlock", "h2")}
           data-testid="button-format-h2"
           className="h-8 w-8"
         >
@@ -148,7 +148,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
         <Button
           size="icon"
           variant="ghost"
-          onClick={() => execCommand("formatBlock", "<pre>")}
+          onClick={() => execCommand("formatBlock", "pre")}
           data-testid="button-format-code"
           className="h-8 w-8"
         >
