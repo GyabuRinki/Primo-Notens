@@ -1,15 +1,27 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Play, BookOpen, ArrowLeft } from "lucide-react";
+import { Plus, Search, Play, BookOpen, ArrowLeft, Download, Upload } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { localStorageService } from "@/lib/localStorage";
 import type { Flashcard, Deck } from "@shared/schema";
 import { FlashcardEditor } from "@/components/FlashcardEditor";
 import { FlashcardStudySession } from "@/components/FlashcardStudySession";
 import { DeckEditor } from "@/components/DeckEditor";
+import { 
+  exportDeckToText, 
+  exportCardsToText, 
+  importDeckFromText, 
+  importCardsFromText,
+  downloadTextFile,
+  uploadTextFile
+} from "@/lib/importExport";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Flashcards() {
   const [decks, setDecks] = useState<Deck[]>([]);
@@ -21,6 +33,10 @@ export default function Flashcards() {
   const [isEditingDeck, setIsEditingDeck] = useState(false);
   const [isCreatingCard, setIsCreatingCard] = useState(false);
   const [isStudying, setIsStudying] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportCardsDialogOpen, setExportCardsDialogOpen] = useState(false);
+  const [includeProgress, setIncludeProgress] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const loadedDecks = localStorageService.getDecks();
@@ -112,6 +128,110 @@ export default function Flashcards() {
     return { total: deckCards.length, reviewed, dueToday, percentage };
   };
 
+  const handleExportDeck = () => {
+    if (!selectedDeck) return;
+    
+    const deckCards = flashcards.filter(c => c.deckId === selectedDeck.id);
+    const textContent = exportDeckToText(selectedDeck, deckCards, { includeProgress });
+    const filename = `${selectedDeck.name.replace(/[^a-z0-9]/gi, '_')}.txt`;
+    downloadTextFile(textContent, filename);
+    
+    setExportDialogOpen(false);
+    toast({
+      title: "Deck exported",
+      description: `${selectedDeck.name} has been exported successfully.`,
+    });
+  };
+
+  const handleImportDeck = async () => {
+    try {
+      const text = await uploadTextFile();
+      const { deck, cards } = importDeckFromText(text);
+      
+      const newDeck: Deck = {
+        id: crypto.randomUUID(),
+        ...deck,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      
+      const newCards: Flashcard[] = cards.map(card => ({
+        id: crypto.randomUUID(),
+        deckId: newDeck.id,
+        ...card,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      }));
+      
+      const updatedDecks = [newDeck, ...decks];
+      const updatedCards = [...newCards, ...flashcards];
+      
+      setDecks(updatedDecks);
+      setFlashcards(updatedCards);
+      localStorageService.saveDecks(updatedDecks);
+      localStorageService.saveFlashcards(updatedCards);
+      
+      toast({
+        title: "Deck imported",
+        description: `${newDeck.name} with ${newCards.length} cards has been imported.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Import failed",
+        description: error instanceof Error ? error.message : "Failed to import deck",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExportCards = () => {
+    if (!selectedDeck) return;
+    
+    const deckCards = flashcards.filter(c => c.deckId === selectedDeck.id);
+    const textContent = exportCardsToText(deckCards, { includeProgress });
+    const filename = `${selectedDeck.name.replace(/[^a-z0-9]/gi, '_')}_cards.txt`;
+    downloadTextFile(textContent, filename);
+    
+    setExportCardsDialogOpen(false);
+    toast({
+      title: "Cards exported",
+      description: `${deckCards.length} cards have been exported successfully.`,
+    });
+  };
+
+  const handleImportCards = async () => {
+    if (!selectedDeck) return;
+    
+    try {
+      const text = await uploadTextFile();
+      const cards = importCardsFromText(text);
+      
+      const newCards: Flashcard[] = cards.map(card => ({
+        id: crypto.randomUUID(),
+        deckId: selectedDeck.id,
+        ...card,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      }));
+      
+      const updatedCards = [...newCards, ...flashcards];
+      
+      setFlashcards(updatedCards);
+      localStorageService.saveFlashcards(updatedCards);
+      
+      toast({
+        title: "Cards imported",
+        description: `${newCards.length} cards have been imported to ${selectedDeck.name}.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Import failed",
+        description: error instanceof Error ? error.message : "Failed to import cards",
+        variant: "destructive",
+      });
+    }
+  };
+
   const filteredDecks = decks.filter(deck =>
     deck.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     deck.subject.toLowerCase().includes(searchQuery.toLowerCase())
@@ -189,7 +309,19 @@ export default function Flashcards() {
               <h1 className="font-serif text-3xl font-semibold text-foreground">{selectedDeck.name}</h1>
               <p className="text-muted-foreground">{selectedDeck.description || selectedDeck.subject}</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button onClick={() => setExportDialogOpen(true)} variant="outline" data-testid="button-export-deck">
+                <Download className="h-4 w-4 mr-2" />
+                Export Deck
+              </Button>
+              <Button onClick={() => setExportCardsDialogOpen(true)} variant="outline" data-testid="button-export-cards">
+                <Download className="h-4 w-4 mr-2" />
+                Export Cards
+              </Button>
+              <Button onClick={handleImportCards} variant="outline" data-testid="button-import-cards">
+                <Upload className="h-4 w-4 mr-2" />
+                Import Cards
+              </Button>
               <Button onClick={() => setIsEditingDeck(true)} variant="outline" data-testid="button-edit-deck">
                 Edit Deck
               </Button>
@@ -275,10 +407,16 @@ export default function Flashcards() {
           <h1 className="font-serif text-3xl font-semibold text-foreground">Flashcard Decks</h1>
           <p className="text-muted-foreground">Organize your flashcards by subject and topic</p>
         </div>
-        <Button onClick={() => setIsCreatingDeck(true)} data-testid="button-create-deck">
-          <Plus className="h-4 w-4 mr-2" />
-          New Deck
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={handleImportDeck} variant="outline" data-testid="button-import-deck">
+            <Upload className="h-4 w-4 mr-2" />
+            Import Deck
+          </Button>
+          <Button onClick={() => setIsCreatingDeck(true)} data-testid="button-create-deck">
+            <Plus className="h-4 w-4 mr-2" />
+            New Deck
+          </Button>
+        </div>
       </div>
 
       <div className="relative mb-6">
@@ -349,6 +487,72 @@ export default function Flashcards() {
           })}
         </div>
       )}
+
+      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <DialogContent data-testid="dialog-export-deck">
+          <DialogHeader>
+            <DialogTitle>Export Deck</DialogTitle>
+            <DialogDescription>
+              Export this deck and all its cards to a .txt file that can be shared with others.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-between py-4">
+            <div className="space-y-1">
+              <Label htmlFor="include-progress" className="text-sm font-medium">
+                Include Progress Data
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Include review history and spaced repetition data
+              </p>
+            </div>
+            <Switch
+              id="include-progress"
+              checked={includeProgress}
+              onCheckedChange={setIncludeProgress}
+              data-testid="switch-include-progress"
+            />
+          </div>
+          <DialogFooter>
+            <Button onClick={handleExportDeck} data-testid="button-confirm-export-deck">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={exportCardsDialogOpen} onOpenChange={setExportCardsDialogOpen}>
+        <DialogContent data-testid="dialog-export-cards">
+          <DialogHeader>
+            <DialogTitle>Export Cards</DialogTitle>
+            <DialogDescription>
+              Export only the cards from this deck to a .txt file.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-between py-4">
+            <div className="space-y-1">
+              <Label htmlFor="include-progress-cards" className="text-sm font-medium">
+                Include Progress Data
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Include review history and spaced repetition data
+              </p>
+            </div>
+            <Switch
+              id="include-progress-cards"
+              checked={includeProgress}
+              onCheckedChange={setIncludeProgress}
+              data-testid="switch-include-progress-cards"
+            />
+          </div>
+          <DialogFooter>
+            <Button onClick={handleExportCards} data-testid="button-confirm-export-cards">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
