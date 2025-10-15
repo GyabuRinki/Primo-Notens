@@ -1,29 +1,60 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Play } from "lucide-react";
+import { Plus, Search, Play, BookOpen, ArrowLeft } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { localStorageService } from "@/lib/localStorage";
-import type { Flashcard } from "@shared/schema";
+import type { Flashcard, Deck } from "@shared/schema";
 import { FlashcardEditor } from "@/components/FlashcardEditor";
 import { FlashcardStudySession } from "@/components/FlashcardStudySession";
+import { DeckEditor } from "@/components/DeckEditor";
 
 export default function Flashcards() {
+  const [decks, setDecks] = useState<Deck[]>([]);
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
   const [selectedCard, setSelectedCard] = useState<Flashcard | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
+  const [isCreatingDeck, setIsCreatingDeck] = useState(false);
+  const [isEditingDeck, setIsEditingDeck] = useState(false);
+  const [isCreatingCard, setIsCreatingCard] = useState(false);
   const [isStudying, setIsStudying] = useState(false);
 
   useEffect(() => {
+    const loadedDecks = localStorageService.getDecks();
     const loadedCards = localStorageService.getFlashcards();
+    setDecks(loadedDecks);
     setFlashcards(loadedCards);
   }, []);
 
-  const createNewCard = () => {
-    setSelectedCard(null);
-    setIsCreating(true);
+  const handleSaveDeck = (deck: Deck) => {
+    const existingIndex = decks.findIndex(d => d.id === deck.id);
+    let updatedDecks: Deck[];
+    
+    if (existingIndex >= 0) {
+      updatedDecks = [...decks];
+      updatedDecks[existingIndex] = deck;
+    } else {
+      updatedDecks = [deck, ...decks];
+    }
+    
+    setDecks(updatedDecks);
+    localStorageService.saveDecks(updatedDecks);
+    setIsCreatingDeck(false);
+    setIsEditingDeck(false);
+  };
+
+  const handleDeleteDeck = (deckId: string) => {
+    const updatedDecks = decks.filter(d => d.id !== deckId);
+    const updatedCards = flashcards.filter(c => c.deckId !== deckId);
+    setDecks(updatedDecks);
+    setFlashcards(updatedCards);
+    localStorageService.saveDecks(updatedDecks);
+    localStorageService.saveFlashcards(updatedCards);
+    setSelectedDeck(null);
+    setIsEditingDeck(false);
   };
 
   const handleSaveCard = (card: Flashcard) => {
@@ -39,7 +70,7 @@ export default function Flashcards() {
     
     setFlashcards(updatedCards);
     localStorageService.saveFlashcards(updatedCards);
-    setIsCreating(false);
+    setIsCreatingCard(false);
     setSelectedCard(null);
   };
 
@@ -48,42 +79,192 @@ export default function Flashcards() {
     setFlashcards(updatedCards);
     localStorageService.saveFlashcards(updatedCards);
     setSelectedCard(null);
-    setIsCreating(false);
   };
 
   const handleUpdateAfterStudy = (updatedCards: Flashcard[]) => {
-    setFlashcards(updatedCards);
-    localStorageService.saveFlashcards(updatedCards);
+    const currentCards = localStorageService.getFlashcards();
+    const updatedCardsMap = new Map(updatedCards.map(card => [card.id, card]));
+    const currentCardsMap = new Map(currentCards.map(card => [card.id, card]));
+    
+    const mergedCards = currentCards.map(card => 
+      updatedCardsMap.has(card.id) ? updatedCardsMap.get(card.id)! : card
+    );
+    
+    updatedCards.forEach(card => {
+      if (!currentCardsMap.has(card.id)) {
+        mergedCards.push(card);
+      }
+    });
+    
+    setFlashcards(mergedCards);
+    localStorageService.saveFlashcards(mergedCards);
   };
 
-  const filteredCards = flashcards.filter(card =>
-    card.front.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    card.back.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    card.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    card.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+  const getDeckProgress = (deckId: string) => {
+    const deckCards = flashcards.filter(c => c.deckId === deckId);
+    if (deckCards.length === 0) return { total: 0, reviewed: 0, dueToday: 0, percentage: 0 };
+    
+    const now = Date.now();
+    const reviewed = deckCards.filter(c => c.reviewCount > 0).length;
+    const dueToday = deckCards.filter(c => !c.nextReview || c.nextReview <= now).length;
+    const percentage = (reviewed / deckCards.length) * 100;
+    
+    return { total: deckCards.length, reviewed, dueToday, percentage };
+  };
+
+  const filteredDecks = decks.filter(deck =>
+    deck.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    deck.subject.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (isStudying) {
+  if (isStudying && selectedDeck) {
+    const deckCards = flashcards.filter(c => c.deckId === selectedDeck.id);
+    const now = Date.now();
+    const cardsToStudy = deckCards.filter(c => !c.nextReview || c.nextReview <= now);
+    
     return (
       <FlashcardStudySession
-        flashcards={flashcards}
+        flashcards={cardsToStudy.length > 0 ? cardsToStudy : deckCards}
         onComplete={handleUpdateAfterStudy}
         onExit={() => setIsStudying(false)}
       />
     );
   }
 
-  if (isCreating || selectedCard) {
+  if (isCreatingDeck) {
     return (
-      <FlashcardEditor
-        flashcard={selectedCard}
-        onSave={handleSaveCard}
-        onCancel={() => {
-          setIsCreating(false);
-          setSelectedCard(null);
-        }}
-        onDelete={selectedCard ? () => handleDeleteCard(selectedCard.id) : undefined}
+      <DeckEditor
+        deck={null}
+        onSave={handleSaveDeck}
+        onCancel={() => setIsCreatingDeck(false)}
       />
+    );
+  }
+
+  if (isEditingDeck && selectedDeck) {
+    return (
+      <DeckEditor
+        deck={selectedDeck}
+        onSave={handleSaveDeck}
+        onCancel={() => {
+          setIsEditingDeck(false);
+          setSelectedDeck(null);
+        }}
+        onDelete={() => handleDeleteDeck(selectedDeck.id)}
+      />
+    );
+  }
+
+  if (selectedDeck) {
+    const deckCards = flashcards.filter(c => c.deckId === selectedDeck.id);
+    const progress = getDeckProgress(selectedDeck.id);
+
+    if (isCreatingCard || selectedCard) {
+      return (
+        <FlashcardEditor
+          flashcard={selectedCard}
+          deckId={selectedDeck.id}
+          onSave={handleSaveCard}
+          onCancel={() => {
+            setIsCreatingCard(false);
+            setSelectedCard(null);
+          }}
+          onDelete={selectedCard ? () => handleDeleteCard(selectedCard.id) : undefined}
+        />
+      );
+    }
+
+    return (
+      <div className="p-6 max-w-6xl mx-auto">
+        <div className="mb-6">
+          <Button variant="ghost" onClick={() => setSelectedDeck(null)} data-testid="button-back-to-decks">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Decks
+          </Button>
+        </div>
+
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
+            <div>
+              <h1 className="font-serif text-3xl font-semibold text-foreground">{selectedDeck.name}</h1>
+              <p className="text-muted-foreground">{selectedDeck.description || selectedDeck.subject}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => setIsEditingDeck(true)} variant="outline" data-testid="button-edit-deck">
+                Edit Deck
+              </Button>
+              {deckCards.length > 0 && (
+                <Button onClick={() => setIsStudying(true)} variant="outline" data-testid="button-start-study">
+                  <Play className="h-4 w-4 mr-2" />
+                  Study
+                </Button>
+              )}
+              <Button onClick={() => setIsCreatingCard(true)} data-testid="button-create-flashcard">
+                <Plus className="h-4 w-4 mr-2" />
+                New Flashcard
+              </Button>
+            </div>
+          </div>
+
+          <Card className="p-6">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Progress</span>
+                <span className="text-sm font-medium">{progress.reviewed} / {progress.total} reviewed</span>
+              </div>
+              <Progress value={progress.percentage} className="h-2" />
+              <div className="flex items-center gap-4 text-sm flex-wrap">
+                <Badge variant="outline">{progress.total} total cards</Badge>
+                <Badge variant="outline">{progress.dueToday} due today</Badge>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {deckCards.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground mb-4">
+              No flashcards in this deck yet. Create your first flashcard to start studying!
+            </p>
+            <Button onClick={() => setIsCreatingCard(true)} variant="outline" data-testid="button-create-first-flashcard">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Your First Flashcard
+            </Button>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {deckCards.map(card => (
+              <Card
+                key={card.id}
+                className="p-4 cursor-pointer hover-elevate active-elevate-2 transition-all"
+                onClick={() => setSelectedCard(card)}
+                data-testid={`card-flashcard-${card.id}`}
+              >
+                <div className="mb-3">
+                  <p className="text-sm text-foreground font-medium line-clamp-2 mb-2">
+                    {card.front}
+                  </p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {card.tags.map(tag => (
+                      <Badge key={tag} variant="outline" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Reviews: {card.reviewCount || 0}</span>
+                  {card.nextReview && card.nextReview > Date.now() && (
+                    <Badge variant="secondary" className="text-xs">
+                      Next: {Math.ceil((card.nextReview - Date.now()) / (24 * 60 * 60 * 1000))}d
+                    </Badge>
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
     );
   }
 
@@ -91,71 +272,81 @@ export default function Flashcards() {
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
         <div>
-          <h1 className="font-serif text-3xl font-semibold text-foreground">Flashcards</h1>
-          <p className="text-muted-foreground">Study with spaced repetition</p>
+          <h1 className="font-serif text-3xl font-semibold text-foreground">Flashcard Decks</h1>
+          <p className="text-muted-foreground">Organize your flashcards by subject and topic</p>
         </div>
-        <div className="flex items-center gap-2">
-          {flashcards.length > 0 && (
-            <Button onClick={() => setIsStudying(true)} variant="outline" data-testid="button-start-study">
-              <Play className="h-4 w-4 mr-2" />
-              Start Study Session
-            </Button>
-          )}
-          <Button onClick={createNewCard} data-testid="button-create-flashcard">
-            <Plus className="h-4 w-4 mr-2" />
-            New Flashcard
-          </Button>
-        </div>
+        <Button onClick={() => setIsCreatingDeck(true)} data-testid="button-create-deck">
+          <Plus className="h-4 w-4 mr-2" />
+          New Deck
+        </Button>
       </div>
 
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search flashcards..."
+          placeholder="Search decks..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10"
-          data-testid="input-search-flashcards"
+          data-testid="input-search-decks"
         />
       </div>
 
-      {filteredCards.length === 0 ? (
+      {filteredDecks.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground mb-4">
-            {searchQuery ? "No flashcards found matching your search." : "No flashcards yet. Create your first flashcard to start studying!"}
+            {searchQuery ? "No decks found matching your search." : "No decks yet. Create your first deck to start organizing flashcards!"}
           </p>
           {!searchQuery && (
-            <Button onClick={createNewCard} variant="outline" data-testid="button-create-first-flashcard">
+            <Button onClick={() => setIsCreatingDeck(true)} variant="outline" data-testid="button-create-first-deck">
               <Plus className="h-4 w-4 mr-2" />
-              Create Your First Flashcard
+              Create Your First Deck
             </Button>
           )}
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredCards.map(card => (
-            <Card
-              key={card.id}
-              className="p-4 cursor-pointer hover-elevate active-elevate-2 transition-all"
-              onClick={() => setSelectedCard(card)}
-              data-testid={`card-flashcard-${card.id}`}
-            >
-              <div className="mb-3">
-                <Badge variant="secondary" className="mb-2">{card.subject}</Badge>
-                <p className="text-sm text-foreground font-medium line-clamp-2">
-                  {card.front}
-                </p>
-              </div>
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Reviews: {card.reviewCount || 0}</span>
-                {card.tags.length > 0 && (
-                  <Badge variant="outline" className="text-xs">
-                    {card.tags[0]}
-                  </Badge>
+          {filteredDecks.map(deck => {
+            const progress = getDeckProgress(deck.id);
+            return (
+              <Card
+                key={deck.id}
+                className="p-6 cursor-pointer hover-elevate active-elevate-2 transition-all"
+                onClick={() => setSelectedDeck(deck)}
+                data-testid={`card-deck-${deck.id}`}
+              >
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="p-2 rounded-md bg-primary/10">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-serif text-lg font-semibold text-foreground mb-1 truncate">
+                      {deck.name}
+                    </h3>
+                    <Badge variant="secondary" className="text-xs">{deck.subject}</Badge>
+                  </div>
+                </div>
+                
+                {progress.total > 0 && (
+                  <div className="space-y-2">
+                    <Progress value={progress.percentage} className="h-1.5" />
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{progress.reviewed}/{progress.total} reviewed</span>
+                      {progress.dueToday > 0 && (
+                        <Badge variant="outline" className="text-xs">
+                          {progress.dueToday} due
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
                 )}
-              </div>
-            </Card>
-          ))}
+                
+                {progress.total === 0 && (
+                  <p className="text-xs text-muted-foreground">No cards yet</p>
+                )}
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

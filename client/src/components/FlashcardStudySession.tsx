@@ -20,7 +20,7 @@ export function FlashcardStudySession({ flashcards, onComplete, onExit }: Flashc
 
   const handleRate = (difficulty: 'easy' | 'good' | 'hard' | 'again') => {
     const updated = [...updatedCards];
-    const card = updated[currentIndex];
+    const card = { ...updated[currentIndex] };
     
     card.reviewCount = (card.reviewCount || 0) + 1;
     
@@ -51,6 +51,7 @@ export function FlashcardStudySession({ flashcards, onComplete, onExit }: Flashc
     card.interval = newInterval;
     card.easeFactor = newEaseFactor;
     
+    updated[currentIndex] = card;
     setUpdatedCards(updated);
 
     if (currentIndex < updatedCards.length - 1) {

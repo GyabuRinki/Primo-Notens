@@ -10,12 +10,13 @@ import type { Flashcard } from "@shared/schema";
 
 interface FlashcardEditorProps {
   flashcard: Flashcard | null;
+  deckId: string;
   onSave: (flashcard: Flashcard) => void;
   onCancel: () => void;
   onDelete?: () => void;
 }
 
-export function FlashcardEditor({ flashcard, onSave, onCancel, onDelete }: FlashcardEditorProps) {
+export function FlashcardEditor({ flashcard, deckId, onSave, onCancel, onDelete }: FlashcardEditorProps) {
   const [front, setFront] = useState(flashcard?.front || "");
   const [back, setBack] = useState(flashcard?.back || "");
   const [subject, setSubject] = useState(flashcard?.subject || "");
@@ -41,12 +42,14 @@ export function FlashcardEditor({ flashcard, onSave, onCancel, onDelete }: Flash
 
     const savedCard: Flashcard = {
       id: flashcard?.id || crypto.randomUUID(),
+      deckId: flashcard?.deckId || deckId,
       front: front.trim(),
       back: back.trim(),
       subject: subject.trim() || "General",
       tags,
+      interval: flashcard?.interval || 0,
+      easeFactor: flashcard?.easeFactor || 2.5,
       reviewCount: flashcard?.reviewCount || 0,
-      difficulty: flashcard?.difficulty,
       nextReview: flashcard?.nextReview,
       createdAt: flashcard?.createdAt || Date.now(),
       updatedAt: Date.now(),
