@@ -9,10 +9,13 @@ import {
   Underline,
   List,
   ListOrdered,
-  Heading1,
-  Heading2,
   Code,
   Palette,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  Type,
 } from "lucide-react";
 import {
   Popover,
@@ -103,23 +106,87 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
 
         <Separator orientation="vertical" className="h-6 mx-1" />
 
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              data-testid="button-text-size"
+              className="h-8 w-8"
+            >
+              <Type className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-2">
+            <div className="flex flex-col gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => execCommand("fontSize", "2")}
+                data-testid="button-size-small"
+                className="justify-start"
+              >
+                <span className="text-xs">Small</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => execCommand("fontSize", "4")}
+                data-testid="button-size-normal"
+                className="justify-start"
+              >
+                <span className="text-sm">Normal</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => execCommand("fontSize", "6")}
+                data-testid="button-size-large"
+                className="justify-start"
+              >
+                <span className="text-lg">Large</span>
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        <Separator orientation="vertical" className="h-6 mx-1" />
+
         <Button
           size="icon"
           variant="ghost"
-          onClick={() => execCommand("formatBlock", "h1")}
-          data-testid="button-format-h1"
+          onClick={() => execCommand("justifyLeft")}
+          data-testid="button-align-left"
           className="h-8 w-8"
         >
-          <Heading1 className="h-4 w-4" />
+          <AlignLeft className="h-4 w-4" />
         </Button>
         <Button
           size="icon"
           variant="ghost"
-          onClick={() => execCommand("formatBlock", "h2")}
-          data-testid="button-format-h2"
+          onClick={() => execCommand("justifyCenter")}
+          data-testid="button-align-center"
           className="h-8 w-8"
         >
-          <Heading2 className="h-4 w-4" />
+          <AlignCenter className="h-4 w-4" />
+        </Button>
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => execCommand("justifyRight")}
+          data-testid="button-align-right"
+          className="h-8 w-8"
+        >
+          <AlignRight className="h-4 w-4" />
+        </Button>
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => execCommand("justifyFull")}
+          data-testid="button-align-justify"
+          className="h-8 w-8"
+        >
+          <AlignJustify className="h-4 w-4" />
         </Button>
 
         <Separator orientation="vertical" className="h-6 mx-1" />
@@ -247,6 +314,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
       <div
         ref={editorRef}
         contentEditable
+        spellCheck={false}
         onInput={handleInput}
         data-placeholder={placeholder}
         className="min-h-[400px] p-4 focus:outline-none prose prose-sm max-w-none text-foreground"
