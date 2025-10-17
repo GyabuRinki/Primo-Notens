@@ -35,7 +35,7 @@ export default function Home() {
             <img 
               src={logoPath} 
               alt="PrimoNotes Logo" 
-              className="h-32 w-auto"
+              className="h-48 w-auto"
               data-testid="img-logo"
             />
           </div>
@@ -50,7 +50,7 @@ export default function Home() {
             Combine powerful note-taking, spaced repetition flashcards, and comprehensive mock tests in one beautiful, focused environment.
           </p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
-            <Link href="/notes">
+            <Link href="#features">
               <Button size="lg" data-testid="button-get-started">
                 Get Started
               </Button>
@@ -119,11 +119,23 @@ export default function Home() {
           <p className="text-muted-foreground mb-8">
             All your study tools in one place. No account needed, everything stored locally on your device.
           </p>
-          <Link href="/notes">
-            <Button size="lg" data-testid="button-start-learning">
-              Start Learning Now
-            </Button>
-          </Link>
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <Link href="/notes">
+              <Button size="lg" data-testid="button-notes">
+                Notes
+              </Button>
+            </Link>
+            <Link href="/flashcards">
+              <Button size="lg" data-testid="button-flashcards">
+                Flashcards
+              </Button>
+            </Link>
+            <Link href="/tests">
+              <Button size="lg" data-testid="button-tests">
+                Tests
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
     </div>

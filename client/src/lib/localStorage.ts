@@ -38,7 +38,35 @@ export const localStorageService = {
   
   getTests: (): Test[] => {
     const data = localStorage.getItem(STORAGE_KEYS.TESTS);
-    return data ? JSON.parse(data) : [];
+    if (!data) return [];
+    
+    const tests = JSON.parse(data) as any[];
+    const migratedTests = tests.map(test => ({
+      ...test,
+      questions: test.questions.map((q: any) => {
+        const correctAnswer = typeof q.correctAnswer === 'string' 
+          ? [q.correctAnswer] 
+          : q.correctAnswer;
+        
+        const migratedQuestion = {
+          ...q,
+          correctAnswer,
+          type: q.type === 'short-answer' ? 'identification' : q.type,
+        };
+        
+        if (migratedQuestion.type === 'identification' && migratedQuestion.caseSensitive === undefined) {
+          migratedQuestion.caseSensitive = false;
+        }
+        
+        return migratedQuestion;
+      }),
+    }));
+    
+    if (JSON.stringify(tests) !== JSON.stringify(migratedTests)) {
+      localStorage.setItem(STORAGE_KEYS.TESTS, JSON.stringify(migratedTests));
+    }
+    
+    return migratedTests as Test[];
   },
   
   saveTests: (tests: Test[]) => {
@@ -47,7 +75,24 @@ export const localStorageService = {
   
   getTestResults: (): TestResult[] => {
     const data = localStorage.getItem(STORAGE_KEYS.TEST_RESULTS);
-    return data ? JSON.parse(data) : [];
+    if (!data) return [];
+    
+    const results = JSON.parse(data) as TestResult[];
+    const migratedResults = results.map(result => ({
+      ...result,
+      answers: Object.fromEntries(
+        Object.entries(result.answers).map(([key, value]) => [
+          key,
+          typeof value === 'string' ? [value] : value
+        ])
+      ),
+    }));
+    
+    if (JSON.stringify(results) !== JSON.stringify(migratedResults)) {
+      localStorage.setItem(STORAGE_KEYS.TEST_RESULTS, JSON.stringify(migratedResults));
+    }
+    
+    return migratedResults;
   },
   
   saveTestResults: (results: TestResult[]) => {

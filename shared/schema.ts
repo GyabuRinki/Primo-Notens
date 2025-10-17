@@ -52,10 +52,11 @@ export type InsertFlashcard = z.infer<typeof insertFlashcardSchema>;
 
 export const questionSchema = z.object({
   id: z.string(),
-  type: z.enum(['multiple-choice', 'true-false', 'short-answer']),
+  type: z.enum(['multiple-choice', 'true-false', 'identification']),
   question: z.string(),
   options: z.array(z.string()).optional(),
-  correctAnswer: z.string(),
+  correctAnswer: z.array(z.string()),
+  caseSensitive: z.boolean().optional(),
   explanation: z.string().optional(),
   subject: z.string(),
   tags: z.array(z.string()),
@@ -81,7 +82,7 @@ export type InsertTest = z.infer<typeof insertTestSchema>;
 export const testResultSchema = z.object({
   id: z.string(),
   testId: z.string(),
-  answers: z.record(z.string()),
+  answers: z.record(z.array(z.string())),
   score: z.number(),
   totalQuestions: z.number(),
   completedAt: z.number(),

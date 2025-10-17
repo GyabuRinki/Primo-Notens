@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Clock } from "lucide-react";
 import { TestQuestionCard } from "./TestQuestionCard";
-import type { Test, TestResult } from "@shared/schema";
+import type { Test, TestResult, Question } from "@shared/schema";
 import { localStorageService } from "@/lib/localStorage";
 
 interface TestTakerProps {
@@ -13,7 +13,7 @@ interface TestTakerProps {
 }
 
 export function TestTaker({ test, onComplete }: TestTakerProps) {
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, string[]>>({});
   const [timeRemaining, setTimeRemaining] = useState(test.timeLimit ? test.timeLimit * 60 : null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [result, setResult] = useState<TestResult | null>(null);
@@ -35,14 +35,32 @@ export function TestTaker({ test, onComplete }: TestTakerProps) {
     return () => clearInterval(timer);
   }, [timeRemaining]);
 
-  const handleAnswerChange = (questionId: string, answer: string) => {
+  const handleAnswerChange = (questionId: string, answer: string[]) => {
     setAnswers({ ...answers, [questionId]: answer });
+  };
+
+  const isAnswerCorrect = (question: Question, userAnswer: string[]): boolean => {
+    if (question.type === 'identification') {
+      if (userAnswer.length === 0) return false;
+      const answer = userAnswer[0];
+      if (!question.caseSensitive) {
+        return question.correctAnswer.some(
+          ans => ans.toLowerCase().trim() === answer.toLowerCase().trim()
+        );
+      }
+      return question.correctAnswer.some(
+        ans => ans.trim() === answer.trim()
+      );
+    }
+    
+    return JSON.stringify([...userAnswer].sort()) === JSON.stringify([...question.correctAnswer].sort());
   };
 
   const handleSubmit = () => {
     let correctCount = 0;
     test.questions.forEach((q) => {
-      if (answers[q.id]?.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim()) {
+      const userAnswer = answers[q.id] || [];
+      if (isAnswerCorrect(q, userAnswer)) {
         correctCount++;
       }
     });
@@ -117,7 +135,7 @@ export function TestTaker({ test, onComplete }: TestTakerProps) {
             {result.score.toFixed(1)}%
           </div>
           <p className="text-muted-foreground">
-            You answered {test.questions.filter(q => answers[q.id]?.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim()).length} out of {test.questions.length} questions correctly
+            You answered {test.questions.filter(q => isAnswerCorrect(q, answers[q.id] || [])).length} out of {test.questions.length} questions correctly
           </p>
         </Card>
       )}

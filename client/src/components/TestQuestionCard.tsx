@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import type { Question } from "@shared/schema";
@@ -8,20 +8,45 @@ import type { Question } from "@shared/schema";
 interface TestQuestionCardProps {
   question: Question;
   questionNumber: number;
-  selectedAnswer?: string;
-  onAnswerChange?: (answer: string) => void;
+  selectedAnswer?: string[];
+  onAnswerChange?: (answer: string[]) => void;
   showCorrect?: boolean;
 }
 
 export function TestQuestionCard({
   question,
   questionNumber,
-  selectedAnswer,
+  selectedAnswer = [],
   onAnswerChange,
   showCorrect,
 }: TestQuestionCardProps) {
-  const isCorrect = showCorrect && selectedAnswer === question.correctAnswer;
-  const isWrong = showCorrect && selectedAnswer && selectedAnswer !== question.correctAnswer;
+  const isCorrect = showCorrect && 
+    JSON.stringify([...selectedAnswer].sort()) === JSON.stringify([...question.correctAnswer].sort());
+  const isWrong = showCorrect && selectedAnswer.length > 0 && !isCorrect;
+
+  const toggleMultipleChoiceOption = (optionLetter: string) => {
+    if (!onAnswerChange) return;
+    const newAnswers = selectedAnswer.includes(optionLetter)
+      ? selectedAnswer.filter(ans => ans !== optionLetter)
+      : [...selectedAnswer, optionLetter];
+    onAnswerChange(newAnswers);
+  };
+
+  const checkIdentificationAnswer = (userAnswer: string): boolean => {
+    if (!question.caseSensitive) {
+      return question.correctAnswer.some(
+        ans => ans.toLowerCase().trim() === userAnswer.toLowerCase().trim()
+      );
+    }
+    return question.correctAnswer.some(
+      ans => ans.trim() === userAnswer.trim()
+    );
+  };
+
+  const isIdentificationCorrect = showCorrect && selectedAnswer.length > 0 && 
+    checkIdentificationAnswer(selectedAnswer[0]);
+  const isIdentificationWrong = showCorrect && selectedAnswer.length > 0 && 
+    !checkIdentificationAnswer(selectedAnswer[0]);
 
   return (
     <Card className="p-6" data-testid={`card-question-${question.id}`}>
@@ -40,17 +65,17 @@ export function TestQuestionCard({
         </div>
         <Badge variant="outline" className="shrink-0">
           {question.type === 'multiple-choice' ? 'MCQ' : 
-           question.type === 'true-false' ? 'T/F' : 'Short'}
+           question.type === 'true-false' ? 'T/F' : 'ID'}
         </Badge>
       </div>
 
       <div className="ml-12">
         {question.type === 'multiple-choice' && question.options && (
-          <RadioGroup value={selectedAnswer} onValueChange={onAnswerChange}>
+          <div className="space-y-2">
             {question.options.map((option, idx) => {
               const optionLetter = String.fromCharCode(65 + idx);
-              const isThisCorrect = showCorrect && option === question.correctAnswer;
-              const isThisWrong = showCorrect && selectedAnswer === option && option !== question.correctAnswer;
+              const isThisCorrect = showCorrect && question.correctAnswer.includes(optionLetter);
+              const isThisWrong = showCorrect && selectedAnswer.includes(optionLetter) && !question.correctAnswer.includes(optionLetter);
               
               return (
                 <div
@@ -61,11 +86,12 @@ export function TestQuestionCard({
                     'hover-elevate'
                   }`}
                 >
-                  <RadioGroupItem
-                    value={option}
+                  <Checkbox
                     id={`${question.id}-${idx}`}
+                    checked={selectedAnswer.includes(optionLetter)}
+                    onCheckedChange={() => toggleMultipleChoiceOption(optionLetter)}
                     disabled={showCorrect}
-                    data-testid={`radio-option-${idx}`}
+                    data-testid={`checkbox-option-${idx}`}
                   />
                   <Label
                     htmlFor={`${question.id}-${idx}`}
@@ -77,14 +103,14 @@ export function TestQuestionCard({
                 </div>
               );
             })}
-          </RadioGroup>
+          </div>
         )}
 
         {question.type === 'true-false' && (
-          <RadioGroup value={selectedAnswer} onValueChange={onAnswerChange}>
+          <div className="space-y-2">
             {['True', 'False'].map((option) => {
-              const isThisCorrect = showCorrect && option === question.correctAnswer;
-              const isThisWrong = showCorrect && selectedAnswer === option && option !== question.correctAnswer;
+              const isThisCorrect = showCorrect && question.correctAnswer.includes(option);
+              const isThisWrong = showCorrect && selectedAnswer.includes(option) && !question.correctAnswer.includes(option);
               
               return (
                 <div
@@ -95,11 +121,16 @@ export function TestQuestionCard({
                     'hover-elevate'
                   }`}
                 >
-                  <RadioGroupItem
-                    value={option}
+                  <Checkbox
                     id={`${question.id}-${option}`}
+                    checked={selectedAnswer.includes(option)}
+                    onCheckedChange={() => {
+                      if (onAnswerChange) {
+                        onAnswerChange([option]);
+                      }
+                    }}
                     disabled={showCorrect}
-                    data-testid={`radio-${option.toLowerCase()}`}
+                    data-testid={`checkbox-${option.toLowerCase()}`}
                   />
                   <Label htmlFor={`${question.id}-${option}`} className="flex-1 cursor-pointer">
                     {option}
@@ -107,28 +138,35 @@ export function TestQuestionCard({
                 </div>
               );
             })}
-          </RadioGroup>
+          </div>
         )}
 
-        {question.type === 'short-answer' && (
+        {question.type === 'identification' && (
           <div>
             <Input
-              value={selectedAnswer || ''}
-              onChange={(e) => onAnswerChange?.(e.target.value)}
+              value={selectedAnswer[0] || ''}
+              onChange={(e) => onAnswerChange?.([e.target.value])}
               placeholder="Type your answer..."
               disabled={showCorrect}
               className={
-                isCorrect ? 'border-chart-3 bg-chart-3/10' :
-                isWrong ? 'border-destructive bg-destructive/10' :
+                isIdentificationCorrect ? 'border-chart-3 bg-chart-3/10' :
+                isIdentificationWrong ? 'border-destructive bg-destructive/10' :
                 ''
               }
-              data-testid="input-short-answer"
+              data-testid="input-identification-answer"
             />
             {showCorrect && (
-              <p className="text-sm text-muted-foreground mt-2">
-                <span className="font-medium">Correct answer: </span>
-                {question.correctAnswer}
-              </p>
+              <div className="text-sm text-muted-foreground mt-2 space-y-1">
+                <p className="font-medium">Acceptable answers:</p>
+                <ul className="list-disc list-inside">
+                  {question.correctAnswer.map((ans, idx) => (
+                    <li key={idx}>{ans}</li>
+                  ))}
+                </ul>
+                {!question.caseSensitive && (
+                  <p className="text-xs italic">Case insensitive</p>
+                )}
+              </div>
             )}
           </div>
         )}
