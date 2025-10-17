@@ -12,7 +12,6 @@ import { localStorageService } from "@/lib/localStorage";
 import type { Flashcard, Deck } from "@shared/schema";
 import { FlashcardEditor } from "@/components/FlashcardEditor";
 import { FlashcardStudySession } from "@/components/FlashcardStudySession";
-import { PriorityStudySession } from "@/components/PriorityStudySession";
 import { DeckEditor } from "@/components/DeckEditor";
 import { 
   exportDeckToText, 
@@ -34,8 +33,6 @@ export default function Flashcards() {
   const [isEditingDeck, setIsEditingDeck] = useState(false);
   const [isCreatingCard, setIsCreatingCard] = useState(false);
   const [isStudying, setIsStudying] = useState(false);
-  const [studyMode, setStudyMode] = useState<'spaced' | 'priority'>('spaced');
-  const [studyModeDialogOpen, setStudyModeDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportCardsDialogOpen, setExportCardsDialogOpen] = useState(false);
   const [includeProgress, setIncludeProgress] = useState(false);
@@ -248,27 +245,8 @@ export default function Flashcards() {
 
   if (isStudying && selectedDeck) {
     const deckCards = flashcards.filter(c => c.deckId === selectedDeck.id);
-    
-    if (studyMode === 'priority') {
-      if (deckCards.length === 0) {
-        setIsStudying(false);
-        toast({
-          title: "No cards to study",
-          description: "Add some cards to this deck first.",
-        });
-        return null;
-      }
-      
-      return (
-        <PriorityStudySession
-          flashcards={deckCards}
-          onComplete={handleUpdateAfterStudy}
-          onExit={() => setIsStudying(false)}
-        />
-      );
-    }
-    
     const now = Date.now();
+    
     let finalCards: Flashcard[];
     
     if (studyAhead) {
@@ -382,7 +360,7 @@ export default function Flashcards() {
                 Edit Deck
               </Button>
               {deckCards.length > 0 && (
-                <Button onClick={() => setStudyModeDialogOpen(true)} variant="outline" data-testid="button-start-study">
+                <Button onClick={() => setIsStudying(true)} variant="outline" data-testid="button-start-study">
                   <Play className="h-4 w-4 mr-2" />
                   Study
                 </Button>
@@ -687,73 +665,6 @@ export default function Flashcards() {
             <Button onClick={handleExportCards} data-testid="button-confirm-export-cards">
               <Download className="h-4 w-4 mr-2" />
               Export
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={studyModeDialogOpen} onOpenChange={setStudyModeDialogOpen}>
-        <DialogContent data-testid="dialog-study-mode">
-          <DialogHeader>
-            <DialogTitle>Select Study Mode</DialogTitle>
-            <DialogDescription>
-              Choose how you want to study your flashcards.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <Card 
-              className={`p-4 cursor-pointer hover-elevate active-elevate-2 transition-all ${studyMode === 'spaced' ? 'border-primary' : ''}`}
-              onClick={() => setStudyMode('spaced')}
-              data-testid="card-study-mode-spaced"
-            >
-              <div className="flex items-start gap-3">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground mb-1">Spaced Repetition</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Study cards based on due dates using the proven SM-2 algorithm. Focus on cards you need to review today.
-                  </p>
-                </div>
-              </div>
-            </Card>
-            
-            <Card 
-              className={`p-4 cursor-pointer hover-elevate active-elevate-2 transition-all ${studyMode === 'priority' ? 'border-primary' : ''}`}
-              onClick={() => setStudyMode('priority')}
-              data-testid="card-study-mode-priority"
-            >
-              <div className="flex items-start gap-3">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground mb-1">Priority Study</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Study cards based on difficulty. Cards you struggle with appear more frequently, with color indicators showing recall difficulty.
-                  </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded-sm bg-destructive" />
-                      <span className="text-xs text-muted-foreground">Hard</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded-sm bg-chart-4" />
-                      <span className="text-xs text-muted-foreground">Medium</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded-sm bg-chart-2" />
-                      <span className="text-xs text-muted-foreground">Easy</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </div>
-          <DialogFooter>
-            <Button 
-              onClick={() => {
-                setStudyModeDialogOpen(false);
-                setIsStudying(true);
-              }} 
-              data-testid="button-confirm-study-mode"
-            >
-              Start Studying
             </Button>
           </DialogFooter>
         </DialogContent>
