@@ -131,7 +131,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => execCommand("fontSize", "4")}
+                onClick={() => execCommand("fontSize", "3")}
                 data-testid="button-size-normal"
                 className="justify-start"
               >
