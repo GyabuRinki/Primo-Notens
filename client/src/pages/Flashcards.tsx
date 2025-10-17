@@ -246,24 +246,25 @@ export default function Flashcards() {
   if (isStudying && selectedDeck) {
     const deckCards = flashcards.filter(c => c.deckId === selectedDeck.id);
     const now = Date.now();
-    const cardsToStudy = deckCards
-      .filter(c => !c.nextReview || c.nextReview <= now)
-      .sort((a, b) => {
-        if (!a.nextReview && !b.nextReview) return 0;
-        if (!a.nextReview) return -1;
-        if (!b.nextReview) return 1;
-        return a.nextReview - b.nextReview;
-      });
     
-    let finalCards = cardsToStudy;
+    let finalCards: Flashcard[];
     
-    if (cardsToStudy.length === 0 && studyAhead) {
+    if (studyAhead) {
       finalCards = deckCards.sort((a, b) => {
         if (!a.nextReview && !b.nextReview) return 0;
         if (!a.nextReview) return -1;
         if (!b.nextReview) return 1;
         return a.nextReview - b.nextReview;
       });
+    } else {
+      finalCards = deckCards
+        .filter(c => !c.nextReview || c.nextReview <= now)
+        .sort((a, b) => {
+          if (!a.nextReview && !b.nextReview) return 0;
+          if (!a.nextReview) return -1;
+          if (!b.nextReview) return 1;
+          return a.nextReview - b.nextReview;
+        });
     }
     
     if (finalCards.length === 0) {

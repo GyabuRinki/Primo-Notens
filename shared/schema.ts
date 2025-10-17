@@ -58,6 +58,7 @@ export const questionSchema = z.object({
   correctAnswer: z.array(z.string()),
   caseSensitive: z.boolean().optional(),
   partialCredit: z.boolean().optional(),
+  partialCreditMode: z.enum(['proportional', 'all-or-nothing']).optional(),
   explanation: z.string().optional(),
   subject: z.string(),
   tags: z.array(z.string()),

@@ -328,26 +328,60 @@ export function TestBuilder({ test, onSave, onCancel, onDelete }: TestBuilderPro
                   </div>
 
                   {question.correctAnswer && question.correctAnswer.length > 1 && (
-                    <div className="flex items-center justify-between pt-2">
-                      <div>
-                        <Label>Allow Partial Credit</Label>
-                        <p className="text-sm text-muted-foreground">
-                          {question.partialCredit 
-                            ? "Students get credit for selecting some correct answers" 
-                            : "Students must select all correct answers to get credit"}
-                        </p>
+                    <>
+                      <div className="flex items-center justify-between pt-2">
+                        <div>
+                          <Label>Allow Partial Credit</Label>
+                          <p className="text-sm text-muted-foreground">
+                            {question.partialCredit 
+                              ? "Students get credit for selecting some correct answers" 
+                              : "Students must select all correct answers to get credit"}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={question.partialCredit || false}
+                            onCheckedChange={(checked) => {
+                              updateQuestion(index, { 
+                                partialCredit: checked,
+                                partialCreditMode: checked ? 'proportional' : undefined
+                              });
+                            }}
+                            data-testid={`switch-partial-credit-${index}`}
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            {question.partialCredit ? "On" : "Off"}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          checked={question.partialCredit || false}
-                          onCheckedChange={(checked) => updateQuestion(index, { partialCredit: checked })}
-                          data-testid={`switch-partial-credit-${index}`}
-                        />
-                        <span className="text-sm text-muted-foreground">
-                          {question.partialCredit ? "On" : "Off"}
-                        </span>
-                      </div>
-                    </div>
+
+                      {question.partialCredit && (
+                        <div className="flex items-center justify-between pt-2 pl-4">
+                          <div>
+                            <Label>Partial Credit Scoring</Label>
+                            <p className="text-sm text-muted-foreground">
+                              {question.partialCreditMode === 'all-or-nothing'
+                                ? "Students get full points only when all correct answers are selected"
+                                : "Students get proportional points based on correct answers selected"}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={question.partialCreditMode === 'proportional'}
+                              onCheckedChange={(checked) => 
+                                updateQuestion(index, { 
+                                  partialCreditMode: checked ? 'proportional' : 'all-or-nothing' 
+                                })
+                              }
+                              data-testid={`switch-partial-credit-mode-${index}`}
+                            />
+                            <span className="text-sm text-muted-foreground">
+                              {question.partialCreditMode === 'proportional' ? "Proportional" : "All or Nothing"}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </>
               )}

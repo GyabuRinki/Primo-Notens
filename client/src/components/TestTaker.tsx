@@ -63,7 +63,11 @@ export function TestTaker({ test, onComplete }: TestTakerProps) {
       
       if (incorrectSelected > 0) return 0;
       
-      return correctSelected / question.correctAnswer.length;
+      if (question.partialCreditMode === 'proportional') {
+        return correctSelected / question.correctAnswer.length;
+      } else {
+        return correctSelected === question.correctAnswer.length ? 1 : 0;
+      }
     }
     
     const isExactMatch = JSON.stringify([...userAnswer].sort()) === JSON.stringify([...question.correctAnswer].sort());

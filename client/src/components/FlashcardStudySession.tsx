@@ -32,18 +32,24 @@ export function FlashcardStudySession({ flashcards, onComplete, onExit }: Flashc
       newEaseFactor = Math.max(1.3, newEaseFactor - 0.2);
       card.nextReview = Date.now() + 10 * 60 * 1000;
     } else {
-      if (newInterval === 0) {
-        newInterval = 1;
-      } else if (newInterval === 1) {
-        newInterval = 6;
-      } else {
-        newInterval = Math.round(newInterval * newEaseFactor);
-      }
-      
       const qualityMap = { hard: 3, good: 4, easy: 5 };
       const quality = qualityMap[difficulty];
       newEaseFactor = newEaseFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
       newEaseFactor = Math.max(1.3, newEaseFactor);
+      
+      if (newInterval === 0) {
+        newInterval = 1;
+      } else if (newInterval === 1) {
+        newInterval = difficulty === 'easy' ? 4 : 3;
+      } else if (newInterval <= 4) {
+        newInterval = difficulty === 'easy' ? 10 : 7;
+      } else if (newInterval <= 10) {
+        newInterval = difficulty === 'easy' ? 20 : 15;
+      } else {
+        const multiplier = difficulty === 'hard' ? 1.2 : (difficulty === 'easy' ? newEaseFactor * 1.3 : newEaseFactor);
+        newInterval = Math.round(newInterval * multiplier);
+        newInterval = Math.min(newInterval, 365);
+      }
       
       card.nextReview = Date.now() + newInterval * 24 * 60 * 60 * 1000;
     }

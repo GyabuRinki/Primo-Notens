@@ -78,7 +78,9 @@ Preferred communication style: Simple, everyday language.
 - Custom implementation of SuperMemo SM-2 algorithm for flashcard review scheduling
 - Tracks ease factor (difficulty multiplier) and interval between reviews
 - Four difficulty ratings: again, hard, good, easy
-- Progressive interval scaling: initial reviews at 1 day, 6 days, then exponential growth
+- Progressive interval scaling with reasonable growth: 1→3→7→15 days, then gradual increase
+- Capped at 365 days maximum to prevent absurd intervals
+- Different progression speeds for easy/good/hard ratings
 
 **Rich Text Editor**:
 - Custom contentEditable-based editor with toolbar controls
@@ -91,6 +93,22 @@ Preferred communication style: Simple, everyday language.
 - Timer functionality with auto-submit on expiration
 - Immediate feedback mode with explanations
 - Result tracking and history
+- Partial credit options with two modes:
+  - Proportional: Students get points based on correct answers selected
+  - All-or-nothing: Students must select all correct answers for full points
+
+**Study Ahead Feature**:
+- Toggle to allow studying cards not yet due
+- When enabled, shows all cards (due + upcoming) sorted by review date
+- Ensures closest due cards always appear in study sessions
+
+**Progressive Web App (PWA)**:
+- Fully installable as a standalone app on mobile and desktop
+- Offline functionality with service worker caching
+- Caches app shell and assets for offline access
+- Navigation fallback ensures SPA routes work offline
+- Manifest configured with app shortcuts for quick access
+- Note: Custom app icons (192x192 and 512x512 PNG) should be added to `client/public/` for full PWA experience
 
 **Theme System**:
 - System preference detection on first load
