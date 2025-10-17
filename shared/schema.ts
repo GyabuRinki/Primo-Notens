@@ -57,6 +57,7 @@ export const questionSchema = z.object({
   options: z.array(z.string()).optional(),
   correctAnswer: z.array(z.string()),
   caseSensitive: z.boolean().optional(),
+  partialCredit: z.boolean().optional(),
   explanation: z.string().optional(),
   subject: z.string(),
   tags: z.array(z.string()),

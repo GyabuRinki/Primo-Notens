@@ -326,6 +326,29 @@ export function TestBuilder({ test, onSave, onCancel, onDelete }: TestBuilderPro
                       })}
                     </div>
                   </div>
+
+                  {question.correctAnswer && question.correctAnswer.length > 1 && (
+                    <div className="flex items-center justify-between pt-2">
+                      <div>
+                        <Label>Allow Partial Credit</Label>
+                        <p className="text-sm text-muted-foreground">
+                          {question.partialCredit 
+                            ? "Students get credit for selecting some correct answers" 
+                            : "Students must select all correct answers to get credit"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={question.partialCredit || false}
+                          onCheckedChange={(checked) => updateQuestion(index, { partialCredit: checked })}
+                          data-testid={`switch-partial-credit-${index}`}
+                        />
+                        <span className="text-sm text-muted-foreground">
+                          {question.partialCredit ? "On" : "Off"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
 

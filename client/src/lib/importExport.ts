@@ -428,6 +428,9 @@ export function exportTestsToText(tests: Test[]): string {
       if (question.caseSensitive !== undefined) {
         output += `CASE_SENSITIVE: ${question.caseSensitive}\n`;
       }
+      if (question.partialCredit !== undefined) {
+        output += `PARTIAL_CREDIT: ${question.partialCredit}\n`;
+      }
       if (question.explanation) {
         output += `EXPLANATION: ${question.explanation}\n`;
       }
@@ -522,6 +525,8 @@ export function importTestsFromText(text: string): Omit<Test, 'id' | 'createdAt'
               question.correctAnswer = answerStr.split(/[,|]/).map(a => a.trim()).filter(a => a);
             } else if (qLine.startsWith('CASE_SENSITIVE: ')) {
               question.caseSensitive = qLine.substring(16) === 'true';
+            } else if (qLine.startsWith('PARTIAL_CREDIT: ')) {
+              question.partialCredit = qLine.substring(16) === 'true';
             } else if (qLine.startsWith('EXPLANATION: ')) {
               question.explanation = qLine.substring(13);
             }
