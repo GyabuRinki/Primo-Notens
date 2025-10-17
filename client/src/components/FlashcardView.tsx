@@ -8,15 +8,31 @@ import type { Flashcard } from "@shared/schema";
 interface FlashcardViewProps {
   flashcard: Flashcard;
   onRate?: (difficulty: 'easy' | 'good' | 'hard' | 'again') => void;
+  showDifficultyIndicator?: boolean;
 }
 
-export function FlashcardView({ flashcard, onRate }: FlashcardViewProps) {
+export function FlashcardView({ flashcard, onRate, showDifficultyIndicator = false }: FlashcardViewProps) {
   const [isFlipped, setIsFlipped] = useState(false);
 
   const handleRate = (difficulty: 'easy' | 'good' | 'hard' | 'again') => {
     onRate?.(difficulty);
     setIsFlipped(false);
   };
+
+  const getDifficultyColor = (score: number): string => {
+    if (score <= 0.33) {
+      const t = score / 0.33;
+      return `hsl(${142}, ${76}%, ${36 + t * 17}%)`;
+    } else if (score <= 0.67) {
+      const t = (score - 0.33) / 0.34;
+      return `hsl(${142 - t * 94}, ${76 + t * 20}%, ${53 - t * 0}%)`;
+    } else {
+      const t = (score - 0.67) / 0.33;
+      return `hsl(${48 - t * 48}, ${96 - t * 12}%, ${53 + t * 7}%)`;
+    }
+  };
+
+  const difficultyScore = flashcard.difficultyScore ?? 0.5;
 
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -40,12 +56,13 @@ export function FlashcardView({ flashcard, onRate }: FlashcardViewProps) {
       </div>
 
       <Card
-        className="min-h-[300px] p-8 cursor-pointer hover-elevate active-elevate-2"
+        className="min-h-[300px] p-8 cursor-pointer hover-elevate active-elevate-2 relative"
         onClick={() => setIsFlipped(!isFlipped)}
         data-testid="card-flashcard"
         style={{
           transition: 'transform 0.6s',
           transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+          borderLeft: showDifficultyIndicator ? `6px solid ${getDifficultyColor(difficultyScore)}` : undefined,
         }}
       >
         <div 
