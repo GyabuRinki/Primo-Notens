@@ -20,8 +20,12 @@ export function TestQuestionCard({
   onAnswerChange,
   showCorrect,
 }: TestQuestionCardProps) {
+  const correctAnswers = Array.isArray(question.correctAnswer) 
+    ? question.correctAnswer 
+    : (question.correctAnswer as string).split(/[,|]/).map(a => a.trim()).filter(a => a);
+  
   const isCorrect = showCorrect && 
-    JSON.stringify([...selectedAnswer].sort()) === JSON.stringify([...question.correctAnswer].sort());
+    JSON.stringify([...selectedAnswer].sort()) === JSON.stringify([...correctAnswers].sort());
   const isWrong = showCorrect && selectedAnswer.length > 0 && !isCorrect;
 
   const toggleMultipleChoiceOption = (optionLetter: string) => {
@@ -34,11 +38,11 @@ export function TestQuestionCard({
 
   const checkIdentificationAnswer = (userAnswer: string): boolean => {
     if (!question.caseSensitive) {
-      return question.correctAnswer.some(
+      return correctAnswers.some(
         ans => ans.toLowerCase().trim() === userAnswer.toLowerCase().trim()
       );
     }
-    return question.correctAnswer.some(
+    return correctAnswers.some(
       ans => ans.trim() === userAnswer.trim()
     );
   };
@@ -74,8 +78,8 @@ export function TestQuestionCard({
           <div className="space-y-2">
             {question.options.map((option, idx) => {
               const optionLetter = String.fromCharCode(65 + idx);
-              const isThisCorrect = showCorrect && question.correctAnswer.includes(optionLetter);
-              const isThisWrong = showCorrect && selectedAnswer.includes(optionLetter) && !question.correctAnswer.includes(optionLetter);
+              const isThisCorrect = showCorrect && correctAnswers.includes(optionLetter);
+              const isThisWrong = showCorrect && selectedAnswer.includes(optionLetter) && !correctAnswers.includes(optionLetter);
               
               return (
                 <div
@@ -109,8 +113,8 @@ export function TestQuestionCard({
         {question.type === 'true-false' && (
           <div className="space-y-2">
             {['True', 'False'].map((option) => {
-              const isThisCorrect = showCorrect && question.correctAnswer.includes(option);
-              const isThisWrong = showCorrect && selectedAnswer.includes(option) && !question.correctAnswer.includes(option);
+              const isThisCorrect = showCorrect && correctAnswers.includes(option);
+              const isThisWrong = showCorrect && selectedAnswer.includes(option) && !correctAnswers.includes(option);
               
               return (
                 <div
@@ -159,7 +163,7 @@ export function TestQuestionCard({
               <div className="text-sm text-muted-foreground mt-2 space-y-1">
                 <p className="font-medium">Acceptable answers:</p>
                 <ul className="list-disc list-inside">
-                  {question.correctAnswer.map((ans, idx) => (
+                  {correctAnswers.map((ans, idx) => (
                     <li key={idx}>{ans}</li>
                   ))}
                 </ul>

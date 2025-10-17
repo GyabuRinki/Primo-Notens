@@ -421,7 +421,13 @@ export function exportTestsToText(tests: Test[]): string {
       if (question.options && question.options.length > 0) {
         output += `OPTIONS: ${question.options.join(' | ')}\n`;
       }
-      output += `CORRECT_ANSWER: ${question.correctAnswer}\n`;
+      const correctAnswers = Array.isArray(question.correctAnswer) 
+        ? question.correctAnswer 
+        : (question.correctAnswer as string).split(/[,|]/).map(a => a.trim()).filter(a => a);
+      output += `CORRECT_ANSWER: ${correctAnswers.join(' | ')}\n`;
+      if (question.caseSensitive !== undefined) {
+        output += `CASE_SENSITIVE: ${question.caseSensitive}\n`;
+      }
       if (question.explanation) {
         output += `EXPLANATION: ${question.explanation}\n`;
       }
@@ -492,7 +498,7 @@ export function importTestsFromText(text: string): Omit<Test, 'id' | 'createdAt'
             question: '',
             subject: '',
             tags: [],
-            correctAnswer: '',
+            correctAnswer: [],
           };
 
           currentLine++;
@@ -501,7 +507,8 @@ export function importTestsFromText(text: string): Omit<Test, 'id' | 'createdAt'
             const qLine = lines[currentLine].trim();
             
             if (qLine.startsWith('TYPE: ')) {
-              question.type = qLine.substring(6) as 'multiple-choice' | 'true-false' | 'short-answer';
+              const typeValue = qLine.substring(6);
+              question.type = (typeValue === 'short-answer' ? 'identification' : typeValue) as 'multiple-choice' | 'true-false' | 'identification';
             } else if (qLine.startsWith('TEXT: ')) {
               question.question = qLine.substring(6);
             } else if (qLine.startsWith('SUBJECT: ')) {
@@ -511,7 +518,10 @@ export function importTestsFromText(text: string): Omit<Test, 'id' | 'createdAt'
             } else if (qLine.startsWith('OPTIONS: ')) {
               question.options = qLine.substring(9).split('|').map(o => o.trim()).filter(o => o);
             } else if (qLine.startsWith('CORRECT_ANSWER: ')) {
-              question.correctAnswer = qLine.substring(16);
+              const answerStr = qLine.substring(16);
+              question.correctAnswer = answerStr.split(/[,|]/).map(a => a.trim()).filter(a => a);
+            } else if (qLine.startsWith('CASE_SENSITIVE: ')) {
+              question.caseSensitive = qLine.substring(16) === 'true';
             } else if (qLine.startsWith('EXPLANATION: ')) {
               question.explanation = qLine.substring(13);
             }
@@ -519,7 +529,7 @@ export function importTestsFromText(text: string): Omit<Test, 'id' | 'createdAt'
             currentLine++;
           }
 
-          if (question.question && question.correctAnswer) {
+          if (question.question && question.correctAnswer.length > 0) {
             test.questions.push(question);
           }
           

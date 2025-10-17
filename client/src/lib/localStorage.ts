@@ -8,6 +8,15 @@ const STORAGE_KEYS = {
   TEST_RESULTS: 'primonotes_test_results',
 } as const;
 
+function normalizeAnswerToArray(answer: string | string[]): string[] {
+  if (Array.isArray(answer)) {
+    return answer.flatMap(a => 
+      typeof a === 'string' ? a.split(/[,|]/).map(s => s.trim()).filter(s => s) : []
+    );
+  }
+  return answer.split(/[,|]/).map(s => s.trim()).filter(s => s);
+}
+
 export const localStorageService = {
   getNotes: (): Note[] => {
     const data = localStorage.getItem(STORAGE_KEYS.NOTES);
@@ -44,9 +53,7 @@ export const localStorageService = {
     const migratedTests = tests.map(test => ({
       ...test,
       questions: test.questions.map((q: any) => {
-        const correctAnswer = typeof q.correctAnswer === 'string' 
-          ? [q.correctAnswer] 
-          : q.correctAnswer;
+        const correctAnswer = normalizeAnswerToArray(q.correctAnswer);
         
         const migratedQuestion = {
           ...q,
@@ -77,13 +84,13 @@ export const localStorageService = {
     const data = localStorage.getItem(STORAGE_KEYS.TEST_RESULTS);
     if (!data) return [];
     
-    const results = JSON.parse(data) as TestResult[];
+    const results = JSON.parse(data) as any[];
     const migratedResults = results.map(result => ({
       ...result,
       answers: Object.fromEntries(
         Object.entries(result.answers).map(([key, value]) => [
           key,
-          typeof value === 'string' ? [value] : value
+          normalizeAnswerToArray(value as string | string[])
         ])
       ),
     }));
