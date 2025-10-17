@@ -14,6 +14,7 @@ interface TestTakerProps {
 
 export function TestTaker({ test, onComplete }: TestTakerProps) {
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
+  const [answeredQuestions, setAnsweredQuestions] = useState<Set<string>>(new Set());
   const [timeRemaining, setTimeRemaining] = useState(test.timeLimit ? test.timeLimit * 60 : null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [result, setResult] = useState<TestResult | null>(null);
@@ -37,35 +38,50 @@ export function TestTaker({ test, onComplete }: TestTakerProps) {
 
   const handleAnswerChange = (questionId: string, answer: string[]) => {
     setAnswers({ ...answers, [questionId]: answer });
+    setAnsweredQuestions(prev => new Set(prev).add(questionId));
   };
 
-  const isAnswerCorrect = (question: Question, userAnswer: string[]): boolean => {
+  const getAnswerScore = (question: Question, userAnswer: string[]): number => {
     if (question.type === 'identification') {
-      if (userAnswer.length === 0) return false;
+      if (userAnswer.length === 0) return 0;
       const answer = userAnswer[0];
       if (!question.caseSensitive) {
         return question.correctAnswer.some(
           ans => ans.toLowerCase().trim() === answer.toLowerCase().trim()
-        );
+        ) ? 1 : 0;
       }
       return question.correctAnswer.some(
         ans => ans.trim() === answer.trim()
-      );
+      ) ? 1 : 0;
     }
     
-    return JSON.stringify([...userAnswer].sort()) === JSON.stringify([...question.correctAnswer].sort());
+    if (question.type === 'multiple-choice' && question.partialCredit && question.correctAnswer.length > 1) {
+      if (userAnswer.length === 0) return 0;
+      
+      const correctSelected = userAnswer.filter(ans => question.correctAnswer.includes(ans)).length;
+      const incorrectSelected = userAnswer.filter(ans => !question.correctAnswer.includes(ans)).length;
+      
+      if (incorrectSelected > 0) return 0;
+      
+      return correctSelected / question.correctAnswer.length;
+    }
+    
+    const isExactMatch = JSON.stringify([...userAnswer].sort()) === JSON.stringify([...question.correctAnswer].sort());
+    return isExactMatch ? 1 : 0;
+  };
+
+  const isAnswerCorrect = (question: Question, userAnswer: string[]): boolean => {
+    return getAnswerScore(question, userAnswer) === 1;
   };
 
   const handleSubmit = () => {
-    let correctCount = 0;
+    let totalScore = 0;
     test.questions.forEach((q) => {
       const userAnswer = answers[q.id] || [];
-      if (isAnswerCorrect(q, userAnswer)) {
-        correctCount++;
-      }
+      totalScore += getAnswerScore(q, userAnswer);
     });
 
-    const score = (correctCount / test.questions.length) * 100;
+    const score = (totalScore / test.questions.length) * 100;
     
     const testResult: TestResult = {
       id: crypto.randomUUID(),
@@ -89,7 +105,7 @@ export function TestTaker({ test, onComplete }: TestTakerProps) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const progress = (Object.keys(answers).length / test.questions.length) * 100;
+  const progress = (answeredQuestions.size / test.questions.length) * 100;
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -118,7 +134,7 @@ export function TestTaker({ test, onComplete }: TestTakerProps) {
         {!isSubmitted && (
           <>
             <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
-              <span>Progress: {Object.keys(answers).length} / {test.questions.length}</span>
+              <span>Progress: {answeredQuestions.size} / {test.questions.length}</span>
               <span>{Math.round(progress)}%</span>
             </div>
             <Progress value={progress} className="h-2" />
@@ -158,7 +174,7 @@ export function TestTaker({ test, onComplete }: TestTakerProps) {
           <Button
             size="lg"
             onClick={handleSubmit}
-            disabled={Object.keys(answers).length !== test.questions.length}
+            disabled={test.questions.some(q => !answers[q.id] || answers[q.id].length === 0)}
             data-testid="button-submit-test"
           >
             Submit Test
