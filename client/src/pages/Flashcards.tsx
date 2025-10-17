@@ -12,6 +12,7 @@ import { localStorageService } from "@/lib/localStorage";
 import type { Flashcard, Deck } from "@shared/schema";
 import { FlashcardEditor } from "@/components/FlashcardEditor";
 import { FlashcardStudySession } from "@/components/FlashcardStudySession";
+import { PriorityStudySession } from "@/components/PriorityStudySession";
 import { DeckEditor } from "@/components/DeckEditor";
 import { 
   exportDeckToText, 
@@ -247,8 +248,27 @@ export default function Flashcards() {
 
   if (isStudying && selectedDeck) {
     const deckCards = flashcards.filter(c => c.deckId === selectedDeck.id);
-    const now = Date.now();
     
+    if (studyMode === 'priority') {
+      if (deckCards.length === 0) {
+        setIsStudying(false);
+        toast({
+          title: "No cards to study",
+          description: "Add some cards to this deck first.",
+        });
+        return null;
+      }
+      
+      return (
+        <PriorityStudySession
+          flashcards={deckCards}
+          onComplete={handleUpdateAfterStudy}
+          onExit={() => setIsStudying(false)}
+        />
+      );
+    }
+    
+    const now = Date.now();
     let finalCards: Flashcard[];
     
     if (studyAhead) {
