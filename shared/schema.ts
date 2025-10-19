@@ -41,7 +41,6 @@ export const flashcardSchema = z.object({
   easeFactor: z.number().default(2.5),
   nextReview: z.number().optional(),
   reviewCount: z.number().default(0),
-  difficultyScore: z.number().default(0.5),
   createdAt: z.number(),
   updatedAt: z.number(),
 });
