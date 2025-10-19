@@ -2,6 +2,8 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
+let deferredPrompt: any;
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
@@ -25,5 +27,21 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  console.log('PWA install prompt is ready');
+  
+  const installEvent = new CustomEvent('pwa-install-available', { detail: e });
+  window.dispatchEvent(installEvent);
+});
+
+window.addEventListener('appinstalled', () => {
+  console.log('PWA was installed');
+  deferredPrompt = null;
+});
+
+export { deferredPrompt };
 
 createRoot(document.getElementById("root")!).render(<App />);
